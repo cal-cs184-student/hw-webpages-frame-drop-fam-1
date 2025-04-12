@@ -1,184 +1,677 @@
-<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>CS184/284A Spring 2025 Homework 4 Write-Up</title>
-		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML'></script>
-		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-		<style>
-			h1 {
-				text-align: center;
-				margin-top: 1.5em;
-				margin-bottom: 0.8em;
-				color: #003262; /* Berkeley Blue */
-				border-bottom: 2px solid #FDB515; /* Berkeley Gold */
-				padding-bottom: 10px;
-			}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS184/284A Spring 2025 Homework 4 Write-Up</title>
+<!-- KaTeX CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" integrity="sha384-wcIxkf4k558AjM3Yz3BBFQUbk/zgIYC2R0QpeeYb+TwlBVMrlgLqwRjIZRhfIMVa" crossorigin="anonymous">
+<!-- KaTeX JS -->
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js" integrity="sha384-hIoBPJpTUs74ddyc4bFZSM1TVlQDA60VBbJS0oA934VSz82sBx1jxWxwKAheSy2U" crossorigin="anonymous"></script>
+<!-- KaTeX Auto-render extension -->
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"
+    onload="renderMathInElement(document.body);"></script>
+<!-- Add KaTeX custom options here if needed -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+            // customised options
+            // • auto-render specific keys, e.g.:
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '\\[', right: '\\]', display: true},
+                {left: '$', right: '$', display: false},
+                {left: '\\(', right: '\\)', display: false}
+            ],
+            // • rendering keys, e.g.:
+            throwOnError : false
+        });
+    });
+</script>
+<!-- BasicLightbox CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basiclightbox@5.0.4/dist/basicLightbox.min.css">
+<!-- Link Swiper's CSS -->
+<link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+<style>
+    h1 {
+        text-align: center;
+        margin-top: 1.5em;
+        margin-bottom: 0.8em;
+        color: #003262; /* Berkeley Blue */
+        border-bottom: 2px solid #FDB515; /* Berkeley Gold */
+        padding-bottom: 10px;
+    }
 
-			h2 {
-				margin-top: 2em;
-				margin-bottom: 0.8em;
-				border-bottom: 1px solid #ddd;
-				padding-bottom: 0.3em;
-				color: #003262; /* Berkeley Blue */
-			}
+    h2 {
+        margin-top: 2em;
+        margin-bottom: 0.8em;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 0.3em;
+        color: #003262; /* Berkeley Blue */
+    }
 
-			.container {
-				margin: 0 auto;
-				padding: 20px 15%;
-				max-width: 1200px;
-			}
+    /* NOTE: HW4 uses max-width, margin auto, and different padding. */
+    /* This rule might change the overall page width and centering. */
+    .container {
+        margin: 0 auto;
+        padding: 20px 15%; /* Original HW3 had 15% side padding */
+        max-width: 1200px; /* Added max-width from HW3 example */
+    }
 
-			figure {
-				text-align: center;
-				margin: 1.5em 0;
-			}
+    figure {
+        text-align: center;
+        margin: 1.5em 0;
+    }
 
-			img {
-				display: inline-block;
-				max-width: 100%;
-				height: auto;
-				border: 1px solid #ddd;
-			}
+    /* NOTE: HW4 used aspect-ratio containers. This simpler style might */
+    /* cause images to resize differently. */
+    img {
+        display: inline-block; /* Changed from block to inline-block like HW3 */
+        max-width: 100%;
+        height: auto;
+        border: 1px solid #ddd; /* Added border from HW3 */
+    }
 
-			body {
-				font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-				line-height: 1.6;
-				color: #333;
-			}
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Same as HW4 */
+        line-height: 1.6;
+        color: #333;
+        /* Removed background-color: #f4f4f4 from HW4 */
+    }
 
-			p {
-				margin-bottom: 1em;
-			}
+    p {
+        margin-bottom: 1em; /* Reduced from 1.2em */
+        /* Removed line-height: 1.8 from HW4 */
+    }
 
-			a {
-				color: #3B7EA1;
-				text-decoration: none;
-			}
+    a {
+        color: #3B7EA1; /* Changed from #007bff */
+        text-decoration: none;
+    }
 
-			a:hover {
-				text-decoration: underline;
-			}
+    a:hover {
+        text-decoration: underline;
+    }
 
-			code {
-				background-color: #f6f8fa;
-				padding: 0.2em 0.4em;
-				border-radius: 3px;
-				font-family: Consolas, Monaco, 'Andale Mono', monospace;
-			}
+    code {
+        background-color: #f6f8fa; /* Changed from #e8e8e8 */
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
+        font-family: Consolas, Monaco, 'Andale Mono', monospace; /* Changed font */
+    }
 
-			.image-row {
-				display: flex;
-				justify-content: center;
-				flex-wrap: wrap;
-				gap: 20px;
-				margin: 1.5em 0;
-			}
+    /* NOTE: HW4 used .grid-container. These styles might not apply */
+    /* without changing HTML class names. */
+    .image-row {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin: 1.5em 0;
+    }
 
-			.image-item {
-				flex: 1 1 400px;
-				max-width: 500px;
-				text-align: center;
-			}
+    .image-item {
+        flex: 1 1 400px;
+        max-width: 500px;
+        text-align: center;
+    }
 
-			figcaption {
-				margin-top: 0.5em;
-				font-style: italic;
-				color: #555;
-			}
+    figcaption {
+        margin-top: 0.5em; /* Reduced from 0.8em */
+        font-style: italic;
+        color: #555; /* Changed from #666 */
+        /* Removed font-size: 0.9em from HW4 */
+    }
 
-			footer {
-				margin-top: 50px;
-				padding-top: 20px;
-				border-top: 1px solid #ddd;
-				color: #666;
-				font-size: 0.9em;
-				text-align: center;
-			}
-		</style>
-	</head>
-	<body>
-		<div class="container">
-		<h1>CS184/284A Spring 2025 Homework 4 Write-Up</h1>
-		<p class="author-info"><strong>Names:</strong> </p>
+    /* Added footer style from HW3 */
+    footer {
+        margin-top: 50px;
+        padding-top: 20px;
+        border-top: 1px solid #ddd;
+        color: #666;
+        font-size: 0.9em;
+        text-align: center;
+    }
 
-		<div class="links">
-			<p><strong>Link to webpage:</strong> (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a></p>
-			
-			<p><strong>Link to GitHub repository:</strong> (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a></p>
-		</div>
+    /* --- Keep BasicLightbox styles --- */
+    /* (Assuming basiclightbox.min.css is still linked) */
+    /* You might need additional styles if lightbox appearance breaks */
 
-		<figure>
-			<img src="clothsim.png" alt="Cloth draped over sphere" style="width:70%"/>
-			<figcaption>You can add images with captions!</figcaption>
-		</figure>
+    /* --- Keep Swiper styles --- */
+    /* (Assuming swiper-bundle.min.css is still linked) */
+    /* You might need additional styles if carousel appearance breaks */
 
-		<!--
-		We've already added one heading per part, to make your write-up as navigable when grading. Please fit your write-up within these sections!
-		-->
+    /* --- Add back essential HW4 styles if needed --- */
+    /* e.g., .lightbox-trigger { cursor: pointer; } */
+    .lightbox-trigger {
+         cursor: pointer; /* Keep pointer for clickable images */
+    }
 
-		<h2>Overview</h2>
-		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
+    /* Add other necessary styles from the old block if features break */
+    /* For example, if grids are needed: */
+     .grid-container {
+        display: grid;
+        gap: 20px; /* Adjust gap as needed */
+        margin: 1.5em 0;
+        align-items: start; /* Align items to the top */
+     }
+    .grid-col-1 { grid-template-columns: 1fr; }
+    .grid-col-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-col-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-col-4 { grid-template-columns: repeat(4, 1fr); }
+    .grid-item figure { margin: 0; } /* Prevent double margins */
 
-		<h2>Part 1: Masses and springs</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+    /* Basic aspect ratio - might need more specific ratios if required */
+    .image-aspect-ratio-container {
+        position: relative;
+        width: 100%;
+        padding-bottom: 100%; /* Default to 1:1, adjust ratio classes if needed */
+        height: 0;
+        overflow: hidden;
+        background-color: #eee; /* Placeholder background */
+    }
+    .image-aspect-ratio-container img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Or 'contain' */
+        display: block; /* Override inline-block for positioned images */
+        border: none; /* Remove border for images inside aspect ratio container */
+    }
+    /* Add .ratio-16-9, .ratio-4-3 etc. if needed */
+     .ratio-16-9 { padding-bottom: 56.25%; } /* 9 / 16 = 0.5625 */
+     .ratio-4-3 { padding-bottom: 75%; }    /* 3 / 4 = 0.75 */
+     .ratio-1-1 { padding-bottom: 100%; }   /* 1 / 1 = 1 */
 
-		<p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>
-		<div style="display: flex; flex-direction: column; align-items: center;">
-			<table style="width: 100%; text-align: center; border-collapse: collapse;">
-			  <tr>
-				<td style="text-align: center;">
-				  <img src="clothsim.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-				<td style="text-align: center;">
-				  <img src="clothsim.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-			  </tr>
-			  <tr>
-				<td style="text-align: center;">
-				  <img src="clothsim.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-				<td style="text-align: center;">
-				  <img src="clothsim.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-			  </tr>
-			</table>
-		</div>
 
-		<h2>Part 2: Simulation via numerical integration</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+    /* Adjust h3, h4, ul, li, hr if needed based on HW3 styles */
+    h3 { font-size: 1.5em; margin-top: 1.8em; margin-bottom: 0.8em; color: #333; } /* Kept HW4 color */
+    h4 { font-size: 1.2em; margin-top: 1.5em; margin-bottom: 0.6em; color: #333; } /* Kept HW4 color */
+    ul { padding-left: 25px; margin: 1.2em 0; }
+    li { margin-bottom: 0.8em; line-height: 1.7; }
+    hr { border: 0; height: 1px; background: #ddd; margin: 3em 0; }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1>CS184/284A Spring 2025 Homework 4 Write-Up</h1>
+        <div style="text-align: center;"> C.K. Wolfe & Edward Lee </div>
+        <br>
+        Link to webpage: <a href="[https://cal-cs184-student.github.io/hw-webpages-frame-drop-fam-1/]">https://cal-cs184-student.github.io/hw-webpages-frame-drop-fam-1/</a>
+        <br>
+        Link to GitHub repository: <a href="[https://github.com/cal-cs184-student/sp25-hw4-frame-drop-fam-4]">https://github.com/cal-cs184-student/sp25-hw4-frame-drop-fam-4</a>
 
-		<h2>Part 3: Handling collisions with other objects</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+        <hr>
 
-		<h2>Part 4: Handling self-collisions</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+        <div class="section">
+            <h2>Overview</h2>
+            <p>
+                In this project, we developed a cloth simulator using a mass-spring system. The simulation employs Verlet integration to update particle positions based on forces derived from structural, shear, and bending springs connecting the masses. We implemented collision detection and response mechanisms for interactions with external objects (spheres, planes) and for self-collisions within the cloth, utilizing spatial hashing for optimization. The visual appearance of the cloth was enhanced through various GLSL shaders, including Blinn-Phong lighting, texture mapping, bump and displacement mapping for surface detail, and environment mapping for reflections. Key challenges involved tuning simulation parameters (spring constants, damping, density) for stable and realistic behavior, and efficiently handling self-collisions. This assignment provided valuable experience in physics-based animation, collision handling techniques, GPU programming with shaders, and the interplay between simulation and rendering.
+            </p>
+        </div>
 
-		<h2>Part 5: Shaders</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+        <hr> <!-- Separator -->
 
-		<h2>(Optional) Part 6: Extra Credit - Additional cloth simulation features!</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-		
-		<h2>Additional Notes (please remove)</h2>
-		<ul>
-			<li>You can also add code if you'd like as so: <code>code code code</code></li>
-			<li>If you'd like to add math equations, 
-				<ul>
-					<li>You can write inline equations like so: \( a^2 + b^2 = c^2 \)</li>
-					<li>You can write display equations like so: \[ a^2 + b^2 = c^2 \]</li>
-				</ul>
-			</li>
-		</ul>
+        <!-- Part 1: Masses and Springs -->
+        <div class="section">
+            <h3>Part 1: Masses and Springs</h3>
+            <p>
+                The cloth is modeled as a grid of point masses connected by springs (structural, shear, bending). The following images show the wireframe structure with different spring constraints enabled in `scene/pinned2.json`.
+            </p>
+            <!-- Grid for Wireframe Images -->
+            <div class="grid-container grid-col-3">
+                <div class="grid-item">
+                   <figure>
+                       <div class="image-aspect-ratio-container ratio-1-1">
+                           <!-- Assuming structural.webp shows structural+bending (no shear) -->
+                           <img src="./images/part1/structural.webp" alt="Wireframe without shear springs" class="lightbox-trigger">
+                       </div>
+                       <figcaption>No Shear Springs</figcaption>
+                   </figure>
+               </div>
+                <div class="grid-item">
+                   <figure>
+                       <div class="image-aspect-ratio-container ratio-1-1">
+                           <img src="./images/part1/shearing.png" alt="Wireframe with only shear springs" class="lightbox-trigger">
+                       </div>
+                       <figcaption>Only Shear Springs</figcaption>
+                   </figure>
+               </div>
+                <div class="grid-item">
+                   <figure>
+                       <div class="image-aspect-ratio-container ratio-1-1">
+                           <img src="./images/part1/all.png" alt="Wireframe with all constraints" class="lightbox-trigger">
+                       </div>
+                       <figcaption>All Constraints</figcaption>
+                   </figure>
+               </div>
+            </div>
+        </div>
 
-		<footer>
-			<p>CS 184/284A - Spring 2025 - UC Berkeley</p>
-		</footer>
-		</div>
-	</body>
+        <hr> <!-- Separator -->
+
+        <!-- Part 2: Simulation -->
+        <div class="section">
+            <h3>Part 2: Simulation Parameters</h3>
+            <p>
+                We experimented with varying the spring constant (<code>ks</code>), density, and damping parameters. The GIFs below demonstrate the effect of changing each parameter from a low value to a high value compared to the default.
+            </p>
+            <!-- Separate GIFs for Parameter Effects -->
+            <figure class="full-width-caption">
+                <div class="image-aspect-ratio-container ratio-16-9">
+                    <img src="./images/part2/p2_ks.gif" alt="Cloth simulation varying spring constant ks" class="lightbox-trigger">
+                </div>
+                <figcaption>
+                    Animation comparing low <code>ks</code> (more stretchy) vs. high <code>ks</code> (stiffer).
+                </figcaption>
+            </figure>
+            <figure class="full-width-caption">
+                <div class="image-aspect-ratio-container ratio-16-9">
+                    <img src="./images/part2/p2_density.gif" alt="Cloth simulation varying density" class="lightbox-trigger">
+                </div>
+                <figcaption>
+                    Animation comparing low density (lighter) vs. high density (heavier).
+                </figcaption>
+            </figure>
+            <figure class="full-width-caption">
+                <div class="image-aspect-ratio-container ratio-16-9">
+                    <img src="./images/part2/p2_damping.gif" alt="Cloth simulation varying damping" class="lightbox-trigger">
+                </div>
+                <figcaption>
+                    Animation comparing low damping (bouncier) vs. high damping (settles faster).
+                </figcaption>
+            </figure>
+
+            <p>Final resting state for <code>scene/pinned4.json</code>:</p>
+            <figure class="full-width-caption">
+                <div class="image-aspect-ratio-container ratio-16-9 todo-placeholder">
+                    <!-- Placeholder: Screenshot for pinned4.json resting state is required by rubric but not found in file list -->
+                    <img src="./images/part2/start-image of-hanging-mesh.png" alt="Pinned 4 cloth at rest" class="lightbox-trigger"> 
+                    <!-- <div>Pinned 4 Resting State<br/>[Image Missing/Not Identified]</div> -->
+                </div>
+                <figcaption>Shaded cloth from <code>scene/pinned4.json</code> in its final resting state (using default parameters). </figcaption>
+            </figure>
+        </div>
+
+        <hr> <!-- Separator -->
+
+        <!-- Part 3: Collisions -->
+        <div class="section">
+            <h3>Part 3: Collisions</h3>
+            <p>
+                Collision handling prevents the cloth from passing through spheres and planes. We demonstrate sphere collisions below, showing the final resting state with varying stiffness (<code>ks</code>).
+            </p>
+            <!-- Grid for Sphere Collision Stiffness GIFs -->
+            <div class="grid-container grid-col-3">
+                <div class="grid-item">
+                   <figure>
+                       <div class="image-aspect-ratio-container ratio-1-1">
+                           <img src="./images/part3/p3-500.gif" alt="Sphere collision ks=500 animation" class="lightbox-trigger">
+                       </div>
+                       <figcaption>Sphere Collision (ks = 500)</figcaption>
+                   </figure>
+               </div>
+                <div class="grid-item">
+                   <figure>
+                       <div class="image-aspect-ratio-container ratio-1-1">
+                           <img src="./images/part3/p3-5000.gif" alt="Sphere collision ks=5000 (default) animation" class="lightbox-trigger">
+                       </div>
+                       <figcaption>Sphere Collision (ks = 5000 - Default)</figcaption>
+                   </figure>
+               </div>
+                <div class="grid-item">
+                   <figure>
+                       <div class="image-aspect-ratio-container ratio-1-1">
+                           <img src="./images/part3/p3-50000.gif" alt="Sphere collision ks=50000 animation" class="lightbox-trigger">
+                       </div>
+                       <figcaption>Sphere Collision (ks = 50000)</figcaption>
+                   </figure>
+               </div>
+            </div>
+            <p>
+                With low <code>ks</code> (500), the cloth stretches significantly. With default <code>ks</code> (5000), it drapes naturally. With high <code>ks</code> (50000), the cloth is very stiff and barely conforms.
+            </p>
+            <p>Cloth resting on the plane:</p>
+            <figure class="full-width-caption">
+                <div class="image-aspect-ratio-container ratio-16-9 todo-placeholder">
+                     <!-- Placeholder: Screenshot for cloth resting on plane is required by rubric but not found in file list -->
+                     <img src="./images/part3/resting.png" alt="Cloth resting on plane" class="lightbox-trigger">
+                     <!-- <div>Cloth Resting on Plane<br/>[Image Missing/Not Identified]</div> -->
+                </div>
+                <figcaption>Shaded cloth resting peacefully on the plane. </figcaption>
+            </figure>
+        </div>
+
+        <hr> <!-- Separator -->
+
+        <!-- Part 4: Self-Collisions -->
+        <div class="section">
+            <h3>Part 4: Self-Collisions</h3>
+            <p>
+                Self-collision handling using spatial hashing prevents the cloth from intersecting itself. The GIF below shows the cloth falling and folding under default settings.
+            </p>
+             <!-- GIF for Self-Collision Sequence -->
+            <figure class="full-width-caption">
+                <div class="image-aspect-ratio-container ratio-16-9">
+                    <img src="./images/part4/p4-deafult-settings.gif" alt="Cloth self-collision sequence" class="lightbox-trigger">
+                </div>
+                <figcaption>Sequence showing cloth falling and folding on itself under default settings.</figcaption>
+            </figure>
+
+            <p>Effects of varying density and stiffness (<code>ks</code>) on self-collision behavior:</p>
+            <!-- GIFs for Self-Collision Parameter Effects -->
+            <figure class="full-width-caption">
+                <div class="image-aspect-ratio-container ratio-16-9">
+                     <!-- Typo in filename: densiry -->
+                    <img src="./images/part4/p4-densiry-lo-hi.gif" alt="Self-collision varying density animation" class="lightbox-trigger">
+                </div>
+                <figcaption>
+                    Animation comparing low density vs. high density effects on self-collision.
+                </figcaption>
+            </figure>
+             <figure class="full-width-caption">
+                <div class="image-aspect-ratio-container ratio-16-9">
+                    <img src="./images/part4/p4-ks-lo-hi.gif" alt="Self-collision varying ks animation" class="lightbox-trigger">
+                </div>
+                <figcaption>
+                    Animation comparing low <code>ks</code> vs. high <code>ks</code> effects on self-collision. Higher stiffness results in fewer, larger folds.
+                </figcaption>
+            </figure>
+        </div>
+
+        <hr> <!-- Separator -->
+
+        <!-- Part 5: Shaders -->
+        <div class="section">
+            <h3>Part 5: Shaders</h3>
+            <p>
+                Vertex and fragment shaders run on the GPU to determine the appearance of surfaces, simulating lighting and material properties.
+            </p>
+
+            <h4>Blinn-Phong Shading (`shaders/Phong.frag`)</h4>
+            <p>
+                The Blinn-Phong model calculates lighting as a sum of ambient, diffuse, and specular components.
+            </p>
+            <!-- Grid for Blinn-Phong Components -->
+            <div class="grid-container grid-col-4">
+                <div class="grid-item">
+                   <figure>
+                       <div class="image-aspect-ratio-container ratio-1-1">
+                           <img src="./images/part5/Phong_Ambient.png" alt="Blinn-Phong Ambient Component Only" class="lightbox-trigger">
+                       </div>
+                       <figcaption>Ambient Only</figcaption>
+                   </figure>
+               </div>
+                <div class="grid-item">
+                   <figure>
+                       <div class="image-aspect-ratio-container ratio-1-1">
+                           <!-- Typo in filename: Phone_Diffuse -->
+                           <img src="./images/part5/Phone_Diffuse.png" alt="Blinn-Phong Diffuse Component Only" class="lightbox-trigger">
+                       </div>
+                       <figcaption>Diffuse Only</figcaption>
+                   </figure>
+               </div>
+                <div class="grid-item">
+                   <figure>
+                       <div class="image-aspect-ratio-container ratio-1-1">
+                           <img src="./images/part5/Phong_Spectacular.png" alt="Blinn-Phong Specular Component Only" class="lightbox-trigger">
+                       </div>
+                       <figcaption>Specular Only</figcaption>
+                   </figure>
+               </div>
+                <div class="grid-item">
+                   <figure>
+                       <div class="image-aspect-ratio-container ratio-1-1">
+                            <!-- Typo in filename: Phone -->
+                           <img src="./images/part5/Phone.png" alt="Full Blinn-Phong Shading" class="lightbox-trigger">
+                       </div>
+                       <figcaption>Full Blinn-Phong</figcaption>
+                   </figure>
+               </div>
+            </div>
+
+            <h4>Texture Mapping (`shaders/Texture.frag`)</h4>
+            <p>
+                Applying a 2D texture map to the cloth surface using UV coordinates.
+            </p>
+            <figure class="full-width-caption">
+                <div class="image-aspect-ratio-container ratio-1-1">
+                    <img src="./images/part5/Texture.png" alt="Texture mapped cloth" class="lightbox-trigger">
+                </div>
+                <figcaption>Custom texture mapping applied to the cloth.</figcaption>
+            </figure>
+
+            <h4>Bump and Displacement Mapping</h4>
+            <p>
+                Bump mapping perturbs surface normals based on a height map texture (`shaders/Bump.frag`), creating the illusion of detail without changing geometry. Displacement mapping actually moves vertices based on the height map (`shaders/Displacement.vert`), creating real geometric detail.
+            </p>
+             <!-- Grid for Bump/Displacement Images -->
+            <div class="grid-container grid-col-2">
+                <div class="grid-item">
+                    <figure>
+                        <div class="image-aspect-ratio-container ratio-1-1">
+                            <img src="./images/part5/Bump-Plane.png" alt="Bump mapping on cloth" class="lightbox-trigger">
+                        </div>
+                        <figcaption>Bump Mapping (Cloth)</figcaption>
+                    </figure>
+                </div>
+                 <div class="grid-item">
+                    <figure>
+                        <div class="image-aspect-ratio-container ratio-1-1">
+                            <img src="./images/part5/Bump.png" alt="Bump mapping on sphere" class="lightbox-trigger">
+                        </div>
+                        <figcaption>Bump Mapping (Sphere)</figcaption>
+                    </figure>
+                </div>
+                <!-- Displacement mapping on cloth wasn't explicitly required by rubric, but image exists -->
+                 <div class="grid-item">
+                    <figure>
+                        <div class="image-aspect-ratio-container ratio-1-1">
+                            <img src="./images/part5/Displacement-Plane.png" alt="Displacement mapping on cloth" class="lightbox-trigger">
+                        </div>
+                        <figcaption>Displacement Mapping (Cloth)</figcaption>
+                    </figure>
+                </div>
+                <div class="grid-item">
+                   <figure>
+                       <div class="image-aspect-ratio-container ratio-1-1">
+                           <img src="./images/part5/displacement.png" alt="Displacement mapping on sphere" class="lightbox-trigger">
+                       </div>
+                       <figcaption>Displacement Mapping (Sphere)</figcaption>
+                   </figure>
+               </div>
+            </div>
+            <p>Comparison on sphere with varying mesh density:</p>
+            <!-- Grid for Mesh Coarseness Comparison -->
+            <div class="grid-container grid-col-4">
+                 <div class="grid-item">
+                    <figure>
+                        <div class="image-aspect-ratio-container ratio-1-1">
+                             <img src="./images/part5/bump-16.png" alt="Bump mapping on coarse sphere mesh (-o 16)" class="lightbox-trigger">
+                        </div>
+                        <figcaption>Bump Mapping (Coarse Mesh)</figcaption>
+                    </figure>
+                </div>
+                 <div class="grid-item">
+                    <figure>
+                        <div class="image-aspect-ratio-container ratio-1-1">
+                             <img src="./images/part5/bump-128.png" alt="Bump mapping on fine sphere mesh (-o 128)" class="lightbox-trigger">
+                        </div>
+                        <figcaption>Bump Mapping (Fine Mesh)</figcaption>
+                    </figure>
+                </div>
+                 <div class="grid-item">
+                    <figure>
+                        <div class="image-aspect-ratio-container ratio-1-1">
+                             <img src="./images/part5/displacement-16.png" alt="Displacement mapping on coarse sphere mesh (-o 16)" class="lightbox-trigger">
+                        </div>
+                        <figcaption>Displacement Mapping (Coarse Mesh)</figcaption>
+                    </figure>
+                </div>
+                 <div class="grid-item">
+                    <figure>
+                        <div class="image-aspect-ratio-container ratio-1-1">
+                             <img src="./images/part5/displacement-128.png" alt="Displacement mapping on fine sphere mesh (-o 128)" class="lightbox-trigger">
+                        </div>
+                        <figcaption>Displacement Mapping (Fine Mesh)</figcaption>
+                    </figure>
+                </div>
+            </div>
+             <p>
+                Bump mapping's appearance is largely unaffected by mesh density as it only modifies shading based on normals. Displacement mapping heavily relies on vertex density; the effect looks blocky on coarse meshes because there aren't enough vertices to displace accurately, while fine meshes allow for detailed geometric changes that follow the height map closely, especially visible at the silhouette.
+             </p>
+
+            <h4>Environment-Mapped Reflections (`shaders/Mirror.frag`)</h4>
+            <p>
+                The mirror shader uses a cube map texture to simulate reflections.
+            </p>
+            <!-- Grid for Mirror Shader -->
+            <div class="grid-container grid-col-2">
+                <div class="grid-item">
+                   <figure>
+                       <div class="image-aspect-ratio-container ratio-1-1">
+                           <!-- Typo in filename: Mirros-Plane -->
+                           <img src="./images/part5/Mirros-Plane.png" alt="Mirror shader on cloth" class="lightbox-trigger">
+                       </div>
+                       <figcaption>Mirror Shader (Cloth)</figcaption>
+                   </figure>
+               </div>
+                <div class="grid-item">
+                   <figure>
+                       <div class="image-aspect-ratio-container ratio-1-1">
+                           <img src="./images/part5/mirror.png" alt="Mirror shader on sphere" class="lightbox-trigger">
+                       </div>
+                       <figcaption>Mirror Shader (Sphere)</figcaption>
+                   </figure>
+               </div>
+            </div>
+
+            <h4>Custom Shader (`shaders/Custom.frag`, `shaders/Custom.vert`)</h4>
+            <p>
+                Our custom shader visualizes world-space normals.
+            </p>
+            <figure class="full-width-caption">
+                <div class="image-aspect-ratio-container ratio-16-9">
+                   <img src="./images/part5/Phong-Custom.png" alt="Custom shader result visualizing normals" class="lightbox-trigger">
+               </div>
+               <figcaption>Result of the custom shader (visualizing world-space normals).</figcaption>
+             </figure>
+        </div>
+
+        <hr> <!-- Separator -->
+
+
+        <!-- Rolling Carousel / Image Tiles Section -->
+        <div class="section">
+            <h3>Part 6</h3>
+            <p>
+             Misc implementations...
+            </p>
+
+            <!-- Optional inline CSS to size images and space them out nicely -->
+            <style>
+                /* This centers each slide's content horizontally & vertically. */
+                .rolling-slide {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                }
+
+                /* Constrain images to a uniform size. 
+                   Adjust max-width, max-height to your preference. */
+                .rolling-slide img {
+                    max-width: 250px; 
+                    max-height: 180px;
+                    object-fit: contain;
+                    border-radius: 8px;   /* Rounded corners, optional */
+                }
+            </style>
+
+            <!-- Swiper Container -->
+            <div class="swiper" id="rolling-carousel">
+                <div class="swiper-wrapper">
+                    <!-- Slide 1 -->
+                    <div class="swiper-slide rolling-slide">
+                        <img src="./images/part3/start-meshgrid-falling.gif"
+                             alt="Start Meshgrid Falling animation" class="lightbox-trigger">
+                    </div>
+                    <!-- Slide 2 -->
+                    <div class="swiper-slide rolling-slide">
+                        <img src="./images/part5/wireframe.png" 
+                             alt="Wireframe view" class="lightbox-trigger">
+                    </div>
+                    <!-- Slide 3 -->
+                    <div class="swiper-slide rolling-slide">
+                        <img src="./images/part5/Custom.png"
+                             alt="Custom shader (Custom)" class="lightbox-trigger">
+                    </div>
+                    <!-- Slide 4 -->
+                    <div class="swiper-slide rolling-slide">
+                        <img src="./images/part5/Phong_Spectacular.png"
+                             alt="Phong Specular Only" class="lightbox-trigger">
+                    </div>
+                    <!-- Add more slides if desired -->
+                </div>
+
+                <!-- Navigation & pagination (optional) -->
+                <div class="swiper-pagination"></div>
+                <div class="swiper-button-next"></div>
+                <div class="swiper-button-prev"></div>
+            </div>
+        </div>
+
+    </div> <!-- End Container -->
+
+    <!-- Swiper JS -->
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    <!-- BasicLightbox JS -->
+    <script src="https://cdn.jsdelivr.net/npm/basiclightbox@5.0.4/dist/basicLightbox.min.js"></script>
+
+    <script>
+        // Initialize your new carousel (in addition to any existing ones)
+        const extraGallery = new Swiper('#extra-gallery', {
+            loop: true,
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true,
+            },
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
+            },
+            grabCursor: true,
+            keyboard: {
+                enabled: true,
+                onlyInViewport: false,
+            },
+        });
+
+        // Initialize the rolling carousel
+        const rollingCarousel = new Swiper('#rolling-carousel', {
+            loop: true,
+            slidesPerView: 3,  // Number of slides shown at once
+            spaceBetween: 20,  // Space (in px) between slides
+            centeredSlides: false,  // Standard left→right alignment
+            grabCursor: true,
+            keyboard: {
+                enabled: true,
+                onlyInViewport: false,
+            },
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true,
+            },
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
+            },
+        });
+
+        // Existing code for lightbox, etc.
+        // ...
+    </script>
+
+</body>
 </html>
