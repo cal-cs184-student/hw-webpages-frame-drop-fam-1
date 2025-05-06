@@ -1,0 +1,750 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C.K. Wolfe | CS 184/284A PathTracer Features</title>
+<link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true
+  },
+  svg: {
+    fontCache: 'global'
+  }
+};
+</script>
+<script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+</script>
+<style>
+    /* --- Template Styles --- */
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 1600px; margin: 0 auto; padding: 0 20px; }
+    h1, h2, h3 { color: #003262; text-align: center; }
+    h3 { margin-top: 40px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+    h1 { border-bottom: 2px solid #FDB515; padding-bottom: 10px; margin-bottom: 10px; }
+    h2 { margin-top: 5px; margin-bottom: 30px; border-bottom: none; padding-bottom: 0; font-size: 1.2em; color: #555; }
+    img { max-width: 100%; height: auto; display: block; }
+    /* Image container adjustments */
+    .image-container { margin: 10px 0; text-align: center; font-size: 0; /* Prevents inline-block gap */ }
+    /* Default style for figures (often side-by-side pairs in carousels) */
+    .image-container figure {
+        margin: 5px 1%;
+        display: inline-block; /* Allows side-by-side layout */
+        vertical-align: top;
+        max-width: 48%; /* Default width, suitable for pairs */
+        box-sizing: border-box;
+        padding: 5px;
+        font-size: initial; /* Restore font size */
+    }
+    /* Override for figures that are the *only* child in their container */
+    /* This targets the single env map and probability map images */
+    .image-container figure:only-child {
+        max-width: 75%; /* Increase max-width significantly for single images */
+        display: block; /* Ensure it takes its own line and can be centered */
+        margin-left: auto; /* Center the block */
+        margin-right: auto;
+    }
+    /* Ensure the appendix single figures are not affected by the :only-child override */
+    /* This rule is more specific and keeps appendix single figures large */
+    .appendix-swiper .swiper-slide .image-container figure:only-child {
+        max-width: 95%; /* Keep appendix single figures large within their slide */
+        /* display: flex; is already set on the parent figure, centering content */
+        margin-left: 1%; /* Reset centering margins if needed */
+        margin-right: 1%;
+        display: flex; /* Re-apply flex from appendix rules if overridden */
+    }
+
+    .image-container figure img {
+        border: 1px solid #eee;
+        display: block;
+        margin: 0 auto 5px auto;
+        /* Image scales to 100% of figure width */
+        max-width: 100%;
+        height: auto;
+    }
+    /* Ensure captions are not bold */
+    .image-caption { font-style: italic; color: #666; font-size: 0.9em; text-align: center; margin-top: 5px; word-wrap: break-word; font-weight: normal !important; }
+    a { color: #3B7EA1; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .code { font-family: monospace; background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+    ul { margin-left: 20px; padding-left: 20px; }
+    li { margin-bottom: 8px; }
+    /* Ensure answers, lists, analysis paragraphs are not bold by default */
+    p, ul, li, .analysis { font-weight: normal; }
+    /* Keep prompt questions (using <b> tag) bold */
+    p > b { font-weight: bold; }
+
+    .overview { background-color: #f0f8ff; border-left: 4px solid #003262; padding: 15px 20px; margin: 20px 0 30px 0; font-size: 0.95em; border-radius: 4px; }
+    .overview h2 { text-align: left; margin-top: 0; margin-bottom: 10px; border-bottom: 1px solid #d0d0d0; padding-bottom: 5px; }
+    .appendix-section { margin-top: 50px; padding-top: 20px; border-top: 2px solid #003262;}
+    .appendix-section .image-container figure { max-width: 48%; margin: 5px 1%;} /* Adjust appendix figure width if needed */
+    /* Analysis paragraph styling */
+    .analysis { margin-top: 1em; padding: 10px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 0.95em;}
+    /* Allow specific bolding within analysis using <strong> */
+    .analysis strong { color: #003262; font-weight: bold; }
+
+    /* --- Carousel Specific Styles --- */
+    .swiper-container {
+        width: 100%; /* ** FULL WIDTH ** relative to parent (body max-width: 900px) */
+        /* Removed max-width constraint */
+        padding-top: 20px;
+        padding-bottom: 60px; /* Increased bottom padding slightly for potentially taller content */
+        margin: 30px auto;
+        position: relative;
+        overflow: hidden;
+    }
+    .swiper-slide {
+        background-position: center;
+        background-size: cover;
+        /* ** ADJUSTED SLIDE WIDTH for larger central slide relative to full-width container ** */
+        /* Increase width from 70% to make the central slide, figures, and images larger */
+        width: 85%; /* Central slide takes 85% of container width */
+        /* Removed max-width pixel cap */
+        background-color: #fff;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        display: flex;
+        align-items: center; /* Changed back from stretch */
+        justify-content: center;
+        flex-direction: column;
+        /* min-height: 450px; */ /* REMOVED */
+        /* Add some default vertical padding inside the slide */
+        padding-top: 15px;
+        padding-bottom: 15px;
+        /* Ensure height is determined by content */
+        height: auto;
+    }
+    /* Appendix carousel uses default slide effect */
+     .appendix-swiper .swiper-slide {
+         /* Set width for 'auto' slidesPerView - make wider for larger tiles */
+         width: 45%; /* Aim for ~2 slides visible */
+         /* Existing styles */
+         max-width: 95%;
+         box-shadow: none;
+         border-radius: 0;
+         background-color: transparent;
+         min-height: initial;
+         align-items: center;
+         padding-top: 0;
+         padding-bottom: 0;
+         height: auto;
+         /* min-width: 250px; */ /* Might need adjustment if width is large % */
+     }
+    .appendix-swiper .swiper-slide .image-container figure {
+        /* Figures within appendix slides can take full width */
+        max-width: 95%;
+        margin: 5px 1%;
+        /* Ensure figures with two images still display side-by-side */
+        display: flex; /* Use flex for content within figure */
+        flex-direction: column; /* Stack image and caption */
+        justify-content: center; /* Center content vertically */
+        align-items: center; /* Center content horizontally */
+    }
+    /* If a slide's image-container has two figures, make them side-by-side */
+    .appendix-swiper .swiper-slide .image-container:has(figure + figure) {
+        flex-direction: row; /* Override default column for container */
+        flex-wrap: wrap; /* Allow wrapping if needed */
+        justify-content: space-around; /* Space out figures */
+    }
+    .appendix-swiper .swiper-slide .image-container:has(figure + figure) figure {
+         max-width: 48%; /* Limit width when side-by-side */
+         flex-direction: column; /* Keep image/caption stacked */
+    }
+
+    .appendix-swiper .swiper-slide img {
+        border: 1px solid #eee; /* Add border back for appendix */
+        /* Ensure images fit well within the potentially smaller slide width */
+        /* REMOVE max-height: 250px; */ /* Optional: Limit max height for consistency */
+        object-fit: contain;
+        /* Ensure image scales within its figure */
+        max-width: 100%; /* Added for clarity, though default */
+        height: auto; /* Added for clarity, though default */
+    }
+    .swiper-slide .image-container {
+        margin: 0;
+        padding: 0 15px; /* Adjust padding if needed */
+        width: 100%;
+        /* Allow container to grow vertically */
+        display: flex; /* Use flex to manage figures */
+        justify-content: center; /* Center figures horizontally */
+        align-items: center; /* Center figures vertically */
+        flex-wrap: wrap; /* Allow wrapping if needed, though unlikely with 2 figures */
+        /* flex-grow: 1; */ /* No longer needed as slide height is auto */
+    }
+    /* Keep two figures side-by-side within slides (overrides :only-child display:block) */
+    .swiper-slide .image-container figure {
+        /* This max-width remains relative to the image-container, which is 100% of the slide */
+        max-width: 48%;
+        margin: 5px 1%;
+        /* Allow figure to grow if needed, but respect max-width */
+        display: flex; /* Use flex for content within figure */
+        flex-direction: column; /* Stack image and caption */
+        justify-content: center; /* Center content vertically */
+        align-items: center; /* Center content horizontally */
+    }
+    /* Single figure in appendix slide can take more width */
+    /* This rule is redundant now due to the :only-child override + appendix reset */
+    /* .appendix-swiper .swiper-slide .image-container figure { max-width: 95%; } */
+    .swiper-slide img {
+        border: none; /* Remove border inside styled slide */
+        /* Allow image to scale naturally */
+        max-width: 100%; /* Image width is relative to its figure */
+        height: auto; /* Maintain aspect ratio */
+        object-fit: contain; /* Ensure image fits without distortion */
+    }
+    /* This rule might now be redundant or conflict, let's ensure it doesn't limit height */
+    /* .appendix-swiper .swiper-slide img { border: 1px solid #eee; } */ /* Already handled above */
+
+    /* Navigation buttons */
+    .swiper-button-next, .swiper-button-prev { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; cursor: pointer; color: #000000; background-color: rgba(255, 255, 255, 0.6); border-radius: 50%; width: 40px; height: 40px; line-height: 40px; text-align: center; --swiper-navigation-size: 20px; }
+    .swiper-button-prev { left: 5px; }
+    .swiper-button-next { right: 5px; }
+    .swiper-button-next:hover, .swiper-button-prev:hover { background-color: rgba(255, 255, 255, 0.9); color: #003262; }
+    /* Pagination */
+    .swiper-pagination {
+        text-align: center; position: absolute; bottom: 15px; left: 0; right: 0; z-index: 10; /* Adjusted bottom position due to increased padding-bottom */
+    }
+    .swiper-pagination-bullet { background: #ccc; opacity: 1; width: 8px; height: 8px; display: inline-block; border-radius: 50%; margin: 0 5px; cursor: pointer;}
+    .swiper-pagination-bullet-active { background: #003262; }
+    .basicLightbox__placeholder img { max-width: 90vw; max-height: 90vh; }
+</style>
+</head>
+<body>
+<br />
+<h1 align="middle">Exam Make-Up: HW 3-2 Additional Features to PathTracer</h1>
+    <h2 align="middle">C.K. Wolfe</h2>
+    <h2 align="middle">(Webpage URL)</h2>
+    <div class="overview">
+        <h2>Overview of Implemented Features</h2>
+        <p>
+            NOTE: For this project we were told to choose TWO out of the four given parts to complete. One of those parts must be Part 1 or Part 2. In other words, any combination of two parts except the pair (Part 3, Part 4). Please note I did all four parts, you may click on any image to see a larger tile. 
+        </p>
+        <p>
+            The implemented features cover:
+            <ul>
+                <li><b>Part 1: Recursive Light Transport (Lectures 9, 11, 13):</b> Investigated the effect of path recursion depth ($d_{max}$) on rendering scenes with mirror and glass materials. Results show how increasing $d_{max}$ includes progressively more complex light bounces, necessary for effects like interreflections and caustics, leading towards a converged global illumination solution.</li>
+                <li><b>Part 2: Microfacet Material Modeling and Sampling (Lectures 12, 14):</b> Implemented a physically-based microfacet BRDF model ($f_r$) for conductive materials. The effect of the roughness parameter $\alpha$ on appearance is analyzed. Importance sampling based on the microfacet distribution was implemented and compared against cosine hemisphere sampling, showing reduced variance in the Monte Carlo estimation. The generated files reflect exploration of various sampling parameters and materials.</li>
+                <li><b>Part 3: Environment Map Illumination and Sampling (Lectures 11, 13):</b> Implemented lighting using an HDR environment map, providing realistic incident illumination $L_i$ from distant surroundings. An importance sampling strategy based on map luminance, constructing a PDF $p(\omega_i)$, was developed. Comparisons between uniform and the implemented importance sampling demonstrate variance reduction.</li>
+                <li><b>Part 4: Thin-Lens Camera Model and Depth of Field (Lectures 15, 16):</b> Extended the pinhole camera to a thin-lens model with finite aperture radius $R$ and adjustable focal distance $d_f$. Results show the implementation simulates depth of field, with focus shifts controlled by $d_f$ and blur intensity controlled by $R$.</li>
+            </ul>
+        </p>
+        <p>
+
+        </p>
+    </div>
+
+
+
+    <h3 align="middle">Part 1. Mirror and Glass Materials</h3>
+
+    <p>Show a sequence of six images of scene `CBspheres.dae` rendered with $max\_ray\_depth$ set to 0, 1, 2, 3, 4, 5, and 100. The other settings should be at least 64 samples per pixel and 4 samples per light. Make sure to include all screenshots.</p>
+    <p>
+        These images were rendered by the implementation using `-s 256`, `-l 8`, `-r 800 600` for `../dae/sky/CBspheres.dae`, varying $d_{max}$. The path tracer recursively estimates the rendering equation, where $d_{max}$ limits the recursion depth. The implementation involves several key components for handling purely specular (delta) materials like mirrors and glass:
+        <ul>
+            <li><b>Refactoring for Delta BSDFs:</b> The core `at_least_one_bounce_radiance` function was modified to handle delta BSDFs correctly. If the current BSDF `is_delta()`, direct lighting estimation (`one_bounce_radiance`) is skipped for that surface, as light wouldn't scatter diffusely. Instead, after the recursive call determines the radiance $L_{recursive}$ arriving from the next bounce, the emission from that *next* surface hit (`zero_bounce_radiance(next_ray, next_isect)`) is added to it ($L_{in} = L_{recursive} + L_{next\_emission}$). This combined incoming light $L_{in}$ is then scaled by the delta BSDF's reflectance/transmittance and the geometric term (which simplifies due to the delta nature and cosine cancellation, using `abs(wi.z)`).</li>
+            <li><b>Reflection (`BSDF::reflect()`):</b> Implemented using a simple coordinate transformation in the local frame where the normal is $(0,0,1)$: reflecting $\omega_o = (x, y, z)$ gives $\omega_i = (-x, -y, z)$.</li>
+            <li><b>Mirror Material (`MirrorBSDF::sample_f()`):</b> Uses `BSDF::reflect()` to determine the single reflection direction `*wi`. Since it's a delta distribution (only one possible direction), the PDF `*pdf` is set to 1. The function returns `reflectance / abs_cos_theta(*wi)` to cancel the cosine term that `at_least_one_bounce_radiance` would otherwise multiply by, ensuring energy conservation for perfect reflection. `MirrorBSDF::f()` returns zero for non-sampled directions.</li>
+            <li><b>Refraction (`BSDF::refract()`):</b> Calculates the refracted direction `*wi` using Snell's Law, $\sin\theta' = \eta \sin\theta$. This is implemented via coordinate transformation: $\omega_i.x = -\eta \omega_o.x$, $\omega_i.y = -\eta \omega_o.y$, $\omega_i.z = \mp \sqrt{1-\eta^2(1-\omega_o.z^2)}$. The index of refraction ratio $\eta$ is handled based on whether the ray is entering ($\eta=1/ior$) or exiting ($\eta=ior$) the material. It returns `false` and leaves `*wi` untouched if total internal reflection (TIR) occurs (when the term under the square root $1 - \eta^2(1-\omega_o.z^2)$ is negative).</li>
+            <li><b>Glass Material (`GlassBSDF::sample_f()`):</b> Models dielectric behavior combining reflection and refraction. If TIR occurs (checked using `BSDF::refract`), it acts like a mirror (reflects, sets `*pdf = 1`, returns `reflectance / abs_cos_theta(*wi)`). Otherwise, it calculates Schlick's approximation for the reflection coefficient $R = R_0 + (1-R_0)(1-\cos\theta)^5$, where $R_0 = (\frac{\eta_1-\eta_2}{\eta_1+\eta_2})^2$ and $\theta$ is the angle between the incident ray and the normal. It then uses `coin_flip(R)` to probabilistically choose:
+                <ul><li>Reflect (probability $R$): sets `*wi` to reflection, `*pdf = R`, returns $R \cdot \text{reflectance} / \text{abs_cos_theta}(*wi)$.</li>
+                <li>Refract (probability $1-R$): sets `*wi` to refraction, `*pdf = 1-R`, returns $(1-R) \cdot \text{transmittance} / \text{abs_cos_theta}(*wi) / \eta^2$.</li></ul>
+                The division by $\eta^2$ for refraction accounts for the change in radiance concentration across the boundary. `GlassBSDF::f()` returns zero.</li>
+        </ul>
+        Increasing $d_{max}$ allows the recursive path tracer to follow light through more specular bounces. $d_{max}=0$ shows only directly visible emissive surfaces (none here). $d_{max}=1$ shows surfaces after one bounce (e.g., direct lighting hitting the diffuse floor). $d_{max}=2$ allows seeing the floor reflected in the mirror sphere or light passing through the glass sphere once. Higher depths capture more complex paths like reflections between spheres, reflections seen *through* the glass sphere, and light bouncing multiple times within the glass sphere, gradually converging to the full global illumination solution.
+        The core logic resides in `at_least_one_bounce_radiance`, which recursively calls itself until the ray depth reaches `max_ray_depth` or is terminated probabilistically (though Russian Roulette wasn't explicitly required/analyzed here). The base case of the recursion is handled by `zero_bounce_radiance`, which simply returns the emission $L_e$ of the hit surface.
+    </p>
+
+    <div class="swiper-container part1-swiper">
+        <div class="swiper-wrapper">
+            <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part1/CBspheres_depth_0.png" alt="Depth 0 Render" class="lightbox-trigger"/> <figcaption class="image-caption">$d_{max} = 0$ Render</figcaption> </figure> <figure> <img src="images/part1/CBspheres_depth_0_rate.png" alt="Depth 0 Rate/Metric" class="lightbox-trigger"/> <figcaption class="image-caption">$d_{max} = 0$ Rate/Metric</figcaption> </figure> </div> </div>
+            <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part1/CBspheres_depth_1.png" alt="Depth 1 Render" class="lightbox-trigger"/> <figcaption class="image-caption">$d_{max} = 1$ Render</figcaption> </figure> <figure> <img src="images/part1/CBspheres_depth_1_rate.png" alt="Depth 1 Rate/Metric" class="lightbox-trigger"/> <figcaption class="image-caption">$d_{max} = 1$ Rate/Metric</figcaption> </figure> </div> </div>
+            <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part1/CBspheres_depth_2.png" alt="Depth 2 Render" class="lightbox-trigger"/> <figcaption class="image-caption">$d_{max} = 2$ Render</figcaption> </figure> <figure> <img src="images/part1/CBspheres_depth_2_rate.png" alt="Depth 2 Rate/Metric" class="lightbox-trigger"/> <figcaption class="image-caption">$d_{max} = 2$ Rate/Metric</figcaption> </figure> </div> </div>
+            <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part1/CBspheres_depth_3.png" alt="Depth 3 Render" class="lightbox-trigger"/> <figcaption class="image-caption">$d_{max} = 3$ Render</figcaption> </figure> <figure> <img src="images/part1/CBspheres_depth_3_rate.png" alt="Depth 3 Rate/Metric" class="lightbox-trigger"/> <figcaption class="image-caption">$d_{max} = 3$ Rate/Metric</figcaption> </figure> </div> </div>
+            <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part1/CBspheres_depth_4.png" alt="Depth 4 Render" class="lightbox-trigger"/> <figcaption class="image-caption">$d_{max} = 4$ Render</figcaption> </figure> <figure> <img src="images/part1/CBspheres_depth_4_rate.png" alt="Depth 4 Rate/Metric" class="lightbox-trigger"/> <figcaption class="image-caption">$d_{max} = 4$ Rate/Metric</figcaption> </figure> </div> </div>
+            <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part1/CBspheres_depth_5.png" alt="Depth 5 Render" class="lightbox-trigger"/> <figcaption class="image-caption">$d_{max} = 5$ Render</figcaption> </figure> <figure> <img src="images/part1/CBspheres_depth_5_rate.png" alt="Depth 5 Rate/Metric" class="lightbox-trigger"/> <figcaption class="image-caption">$d_{max} = 5$ Rate/Metric</figcaption> </figure> </div> </div>
+            <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part1/CBspheres_depth_100.png" alt="Depth 100 Render" class="lightbox-trigger"/> <figcaption class="image-caption">$d_{max} = 100$ Render</figcaption> </figure> <figure> <img src="images/part1/CBspheres_depth_100_rate.png" alt="Depth 100 Rate/Metric" class="lightbox-trigger"/> <figcaption class="image-caption">$d_{max} = 100$ Rate/Metric</figcaption> </figure> </div> </div>
+        </div>
+        <!-- Add Navigation -->
+        <div class="swiper-button-next part1-swiper-next"></div>
+        <div class="swiper-button-prev part1-swiper-prev"></div>
+        <!-- Add Pagination -->
+        <div class="swiper-pagination part1-swiper-pagination"></div>
+    </div>
+    <br>
+
+    <p><b>Point out the new multibounce effects that appear in each image.</b></p>
+    <p>
+        The rendered sequence demonstrates the cumulative effect of increasing path lengths ($d_{max}$):
+        <ul>
+             <li>$d_{max} = 0$: Shows only direct light emission ($L_e$). Surfaces are black unless emissive.</li>
+             <li>$d_{max} = 1$: Adds direct illumination from light sources (1-bounce paths). Surfaces are lit, but no reflections or refractions appear.</li>
+             <li>$d_{max} = 2$: Adds primary reflections/refractions (2-bounce paths). The mirror sphere reflects the scene, and the glass sphere shows simple refraction.</li>
+             <li>$d_{max} = 3$: Adds secondary reflections/refractions and simple caustics (3-bounce paths). Reflections appear within reflections (e.g., mirror sphere seen in glass sphere), and light focuses through the glass sphere onto the floor (caustic).</li>
+             <li>$d_{max} = 4$ & $5$: Refines global illumination with higher-order effects (4 and 5-bounce paths). Interreflections become more apparent (e.g., color bleeding between spheres and walls), and caustics become brighter/clearer.</li>
+             <li>$d_{max} = 100$: Image appears converged, visually similar to $d_{max} = 5$, indicating further bounces contribute little visible change in this scene.</li>
+        </ul>
+    </p>
+    <div class="analysis">
+        <strong>Implementation Goal:</strong> To simulate recursive light transport, where increasing $d_{max}$ allows longer paths and includes more complex indirect lighting effects.<br/>
+        <strong>Expected Result:</strong> Visual effects like reflections, refractions, caustics, and color bleeding should progressively appear and refine as $d_{max}$ increases from 0. Convergence should be observed at higher depths.<br/>
+        <strong>Observed Result:</strong> The images align with expectations. Direct light appears at $d_{max}=1$. Reflections/refractions start at $d_{max}=2$. Caustics under the glass sphere and interreflections (e.g., color bleeding onto spheres) become more pronounced between $d_{max}=2$ and $d_{max}=5$. The $d_{max}=100$ image is visually indistinguishable from $d_{max}=5$, confirming convergence.<br/>
+        <strong>Potential Errors Check:</strong> Effects appearing at incorrect depths or lack of convergence might indicate errors in path termination or bounce counting. The results suggest the implementation is likely correct. The `at_least_one_bounce_radiance` function handles the recursive estimation, and `zero_bounce_radiance` provides the $L_e$ term.
+    </div>
+    <br>
+
+    <p><b>Explain how these bounce numbers relate to the particular effects that appear. Make sure to include all screenshots.</b></p>
+    <p>
+        The $max\_ray\_depth$ ($d_{max}$) limits the number of surface interactions (bounces) a light path can take before termination. Each bounce corresponds to solving the integral term in the rendering equation recursively.
+        <ul>
+            <li><b>Depth 0 ($d_{max}=0$):</b> Path length 0. Only the emission term $L_e$ is computed (`zero_bounce_radiance`).</li>
+            <li><b>Depth 1 ($d_{max}=1$):</b> Path length 1. Computes $L_e$ plus direct illumination from lights hitting the surface (`one_bounce_radiance`). This corresponds to the first term of the rendering equation integral evaluated with $L_i$ coming directly from light sources.</li>
+            <li><b>Depth 2 ($d_{max}=2$):</b> Path length 2. Includes Depth 1 effects plus light that bounces once off another surface before hitting the point being shaded. This enables single specular reflections/refractions. Corresponds to one recursive call to estimate $L_i$ in the integral.</li>
+            <li><b>Depth 3 ($d_{max}=3$):</b> Path length 3. Includes Depth 2 effects plus light that bounces twice. Enables secondary specular bounces (reflections in reflections) and simple caustics (light refracting/reflecting onto a diffuse surface). Corresponds to two recursive calls.</li>
+            <li><b>Depth $\ge 4$ ($d_{max} \ge 4$):</b> Path lengths $\ge 4$. Required for more complex light transport like intricate caustics and significant color bleeding from multiple diffuse bounces. Each additional depth level adds another layer of recursion to the estimation of $L_i$:
+            $$L_i(\mathbf{p}, \omega_i) \approx L_{e, next} + \int_{H^2} f_{r, next} L_{i, next} (\mathbf{n}_{next} \cdot \omega_{i, next}) d\omega_{i, next}$$
+            </li>
+        </ul>
+        Increasing $d_{max}$ allows the path tracer (`at_least_one_bounce_radiance`) to explore longer light paths, more accurately approximating the full global illumination solution described by the rendering equation. Convergence around $d_{max}=5$ in this scene suggests that paths with more than 5 bounces contribute negligibly to the final pixel color.
+    </p>
+    <br>
+
+
+    <h3 align="middle">Part 2. Microfacet Material</h3>
+    <p><b>Screenshot sequence of 4 images of scene `CBdragon_microfacet_au.dae` rendered with $\alpha$ set to 0.005, 0.05, 0.25 and 0.5...</b></p>
+
+    <div class="swiper-container part2-dragon-swiper">
+        <div class="swiper-wrapper">
+             <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part2/part2_dragon_alpha_0.005.png" alt="Gold Dragon Render (α = 0.005)" class="lightbox-trigger"/> <figcaption class="image-caption">Gold Dragon Render ($\alpha = 0.005$)</figcaption> </figure> <figure> <img src="images/part2/part2_dragon_alpha_0.005_rate.png" alt="Gold Dragon Rate (α = 0.005)" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric ($\alpha = 0.005$)</figcaption> </figure> </div> </div>
+             <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part2/part2_dragon_alpha_0.05.png" alt="Gold Dragon Render (α = 0.05)" class="lightbox-trigger"/> <figcaption class="image-caption">Gold Dragon Render ($\alpha = 0.05$)</figcaption> </figure> <figure> <img src="images/part2/part2_dragon_alpha_0.05_rate.png" alt="Gold Dragon Rate (α = 0.05)" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric ($\alpha = 0.05$)</figcaption> </figure> </div> </div>
+             <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part2/part2_dragon_alpha_0.25.png" alt="Gold Dragon Render (α = 0.25)" class="lightbox-trigger"/> <figcaption class="image-caption">Gold Dragon Render ($\alpha = 0.25$)</figcaption> </figure> <figure> <img src="images/part2/part2_dragon_alpha_0.25_rate.png" alt="Gold Dragon Rate (α = 0.25)" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric ($\alpha = 0.25$)</figcaption> </figure> </div> </div>
+             <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part2/part2_dragon_alpha_0.5.png" alt="Gold Dragon Render (α = 0.5)" class="lightbox-trigger"/> <figcaption class="image-caption">Gold Dragon Render ($\alpha = 0.5$)</figcaption> </figure> <figure> <img src="images/part2/part2_dragon_alpha_0.5_rate.png" alt="Gold Dragon Rate (α = 0.5)" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric ($\alpha = 0.5$)</figcaption> </figure> </div> </div>
+        </div>
+        <!-- Add Navigation -->
+        <div class="swiper-button-next part2-dragon-swiper-next"></div>
+        <div class="swiper-button-prev part2-dragon-swiper-prev"></div>
+        <!-- Add Pagination -->
+        <div class="swiper-pagination part2-dragon-swiper-pagination"></div>
+    </div>
+    <p>
+        These renders show the output of the implemented microfacet BRDF model for a conductive material (Gold). The BRDF is based on the Cook-Torrance model:
+        $$f_r(\omega_i, \omega_o) = \frac{F(\omega_i, \mathbf{h}) G(\omega_i, \omega_o, \mathbf{h}) D(\mathbf{h})}{4 (\mathbf{n} \cdot \omega_i) (\mathbf{n} \cdot \omega_o)}$$
+        where $F$ is the Fresnel term, $G$ is the geometry/shadowing term, $D$ is the Beckmann normal distribution function (NDF), and $\mathbf{h}$ is the halfway vector. The roughness parameter $\alpha$ controls the spread of the NDF $D(\mathbf{h})$:
+        <ul>
+             <li><strong>$\alpha = 0.005$:</strong> Sharp $D(\mathbf{h})$; renders sharp, mirror-like reflections.</li>
+             <li><strong>$\alpha = 0.05$:</strong> Broader $D(\mathbf{h})$; renders blurred reflections.</li>
+             <li><strong>$\alpha = 0.25$:</strong> Wide $D(\mathbf{h})$; renders broadly scattered, diffuse reflections.</li>
+             <li><strong>$\alpha = 0.5$:</strong> Very broad $D(\mathbf{h})$; renders highly diffuse reflections approaching matte.</li>
+        </ul>
+        The implementation demonstrates the $\alpha$-controlled specular-to-diffuse transition.
+    </p>
+     <div class="analysis">
+        <strong>Implementation Goal:</strong> To implement a microfacet BRDF where $\alpha$ controls perceived glossiness via the microfacet normal distribution $D(\mathbf{h})$.<br/>
+        <strong>Expected Result:</strong> Low $\alpha$ values should produce sharp reflections. Increasing $\alpha$ should progressively blur reflections towards a diffuse appearance, while retaining Fresnel properties.<br/>
+        <strong>Observed Result:</strong> The images show the expected transition from sharp highlights ($\alpha=0.005$) to very blurred ones ($\alpha=0.5$). The material consistently appears gold-like.<br/>
+        <strong>Potential Errors Check:</strong> If changing $\alpha$ had no effect, or if glossiness changed inversely, it would indicate an error in the use of $\alpha$ within the $D(\mathbf{h})$ calculation. The results suggest a correct implementation.
+    </div>
+    <br>
+
+    <p><b>Two images comparing cosine hemisphere sampling and microfacet importance sampling. Use the `bunny.dae` scene with the copper microfacet material with $\alpha=0.1$. Use 64 samples per pixel, 1 sample per light, and max_ray_depth=5.</b></p>
+    <p>
+        This comparison demonstrates the variance reduction achieved by importance sampling the microfacet BRDF compared to naive uniform cosine hemisphere sampling. The goal of importance sampling is to generate sample directions $\omega_i$ with a probability density $p(\omega_i)$ that mimics the shape of the function being integrated, $f_r(\omega_i, \omega_o) (\mathbf{n} \cdot \omega_i)$. For microfacet models, this is best achieved by sampling the microfacet normal distribution $D(h)$.
+    </p>
+    <div class="swiper-container part2-bunny-swiper">
+        <div class="swiper-wrapper">
+             <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part2/bunny_cu_hemisphere_s64.png" alt="Copper Bunny - Cosine Hemisphere Sampling (64 spp)" class="lightbox-trigger"/> <figcaption class="image-caption">Cosine Sampling ($p(\omega_i) = \cos\theta_i / \pi$, 64 spp)</figcaption> </figure> <figure> <img src="images/part2/bunny_cu_hemisphere_s64_rate.png" alt="Copper Bunny - Cosine Rate" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric (Cosine)</figcaption> </figure> </div> </div>
+            <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part2/bunny_cu_importance_s64.png" alt="Copper Bunny - Microfacet Importance Sampling (64 spp)" class="lightbox-trigger"/> <figcaption class="image-caption">Importance Sampling ($p(\omega_i) \propto D(\mathbf{h}) (\mathbf{n} \cdot \mathbf{h})$, 64 spp)</figcaption> </figure> <figure> <img src="images/part2/bunny_cu_importance_s64_rate.png" alt="Copper Bunny - Importance Rate" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric (Importance)</figcaption> </figure> </div> </div>
+        </div>
+        <!-- Add Navigation -->
+        <div class="swiper-button-next part2-bunny-swiper-next"></div>
+        <div class="swiper-button-prev part2-bunny-swiper-prev"></div>
+        <!-- Add Pagination -->
+        <div class="swiper-pagination part2-bunny-swiper-pagination"></div>
+    </div>
+    <p>
+        This comparison shows the effect of different sampling probability density functions (PDFs) $p(\omega_i)$ on the variance of the Monte Carlo estimator for reflected radiance:
+        $$\langle L_r \rangle = \frac{1}{N} \sum_{k=1}^N \frac{f_r(\omega_i^{(k)}, \omega_o) L_i(\omega_i^{(k)}) (\mathbf{n} \cdot \omega_i^{(k)})}{p(\omega_i^{(k)})}$$
+        The goal of importance sampling is to choose a PDF $p(\omega_i)$ that mimics the shape of the integrand $f_r L_i \cos\theta_i$, thus reducing variance.
+        <ul>
+             <li><b>Cosine Hemisphere Sampling:</b> Uses $p(\omega_i) = \cos\theta_i / \pi$. This PDF is simple but poorly matches the shape of the peaked microfacet BRDF $f_r$, especially for low roughness values. This mismatch leads to high variance in the estimator, visible as noise in the image.</li>
+             <li><b>Microfacet Importance Sampling:</b> The implementation samples microfacet normals $\mathbf{h}$ according to the NDF $D(\mathbf{h})$ and derives the corresponding incident direction $\omega_i$. The resulting PDF for $\omega_i$ is proportional to $D(\mathbf{h}) (\mathbf{n} \cdot \mathbf{h})$ (or similar, depending on exact derivation), which closely matches the important parts of the BRDF $f_r$. This alignment leads to more uniform sample weights $\frac{f_r \cos\theta_i}{p(\omega_i)}$ and significantly reduced variance, producing a much cleaner image for the same number of samples ($N=64$ spp).</li>
+        </ul>
+        The implemented importance sampling (`MicrofacetBSDF::sample_f`) clearly demonstrates lower variance compared to uniform cosine hemisphere sampling for this reflective material.
+    </p>
+     <div class="analysis">
+        <strong>Implementation Goal:</strong> To implement microfacet BRDF importance sampling (sampling based on the NDF $D(\mathbf{h})$) to reduce variance compared to cosine hemisphere sampling ($p(\omega_i) \propto \cos\theta_i$).<br/>
+        <strong>Expected Result:</strong> Importance sampling should yield a less noisy image for the same sample count ($N$), particularly in specular highlights, by concentrating samples where the BRDF $f_r$ is large.<br/>
+        <strong>Observed Result:</strong> The `bunny_cu_importance_s64.png` image shows substantially less noise compared to `bunny_cu_hemisphere_s64.png`, confirming the expected variance reduction from the importance sampling implementation (`MicrofacetBSDF::sample_f`).<br/>
+        <strong>Potential Errors Check:</strong> Increased noise with importance sampling would indicate errors in the PDF calculation (`MicrofacetBSDF::pdf`), the sampling generation (`MicrofacetBSDF::sample_f`), or the estimator weighting (division by `pdf`). The results suggest a correct implementation.
+    </div>
+    <br>
+
+    <p><b>Show at least one image with some other conductor material (Skipped generating image, explanation follows)...</b></p>
+
+    <p>
+        The microfacet implementation can be used to simulate other conductive materials, such as Cobalt (Co), by providing its specific complex index of refraction $\hat{n}(\lambda) = \eta(\lambda) + i\kappa(\lambda)$ to the Fresnel term $F$ calculation within the BRDF. The Fresnel term determines the amount and color of light reflected at different angles. For conductors, it's computed using the Fresnel equations for absorbing media, which depend on $\eta$ and $\kappa$:
+        $$ R_s = \frac{(\eta - \cos\theta_i)^2 + \kappa^2}{(\eta + \cos\theta_i)^2 + \kappa^2} $$
+        $$ R_p = \frac{(\eta\cos\theta_i - 1)^2 + (\kappa\cos\theta_i)^2}{(\eta\cos\theta_i + 1)^2 + (\kappa\cos\theta_i)^2} $$
+        $$ F(\omega_i, \mathbf{h}) = \frac{1}{2}(R_s + R_p) $$
+        (Using the angle between $\omega_i$ and $\mathbf{h}$ as the incidence angle for the microfacet reflection). The parameters for Cobalt would be approximately:
+        <ul>
+             <li>Material: Cobalt (Co)</li>
+             <li>$\alpha$ (Roughness): 0.25</li>
+             <li>$\eta (\lambda)$ (Refractive Index, RGB approx.): [2.175, 1.977, 1.802]</li>
+             <li>$\kappa (\lambda)$ (Extinction Coefficient, RGB approx.): [3.638, 2.801, 2.156]</li>
+        </ul>
+        Using these wavelength-dependent $\eta$ and $\kappa$ values (derived from measured optical data) in the Fresnel equations implemented in `MicrofacetBSDF::F` would determine Cobalt's spectral reflectance, resulting in its characteristic cool, bluish-silver metallic appearance, distinct from the gold dragon shown previously.
+    </p>
+     <div class="analysis">
+        <strong>Implementation Goal:</strong> To demonstrate the BRDF implementation renders different conductors correctly by using varying complex IOR ($\eta$, $\kappa$) in the Fresnel term $F$.<br/>
+        <strong>Expected Result:</strong> Using measured $\eta(\lambda)$ and $\kappa(\lambda)$ for Cobalt should produce its known bluish-silver metallic appearance, differing significantly from Gold.<br/>
+        <strong>Observed Result:</strong> (Image not generated) Based on the successful rendering of Gold, it's expected that providing Cobalt's IOR values would correctly produce its distinct appearance, indicating the Fresnel term (`MicrofacetBSDF::F`) correctly utilizes the IOR parameters passed from the material definition.<br/>
+        <strong>Potential Errors Check:</strong> Incorrect colors (e.g., appearing like gold or gray) or appearance identical to other metals would suggest errors in passing or using the IOR values ($\eta$, $\kappa$) in the Fresnel calculation.
+    </div>
+    <br>
+
+
+    <h3 align="middle">Part 3. Environment Light</h3>
+    <p>One *.exr* file was chosen to use as an environment light source. The image (converted to *.jpg*) and the chosen file are displayed below.</p>
+    <!-- Image container for Env Map -->
+    <div class="image-container">
+         <figure>
+             <img src="images/exr/a.jpg" alt="Environment Map Used (field.exr)" style="max-width: 600px;" class="lightbox-trigger"/> <!-- Example filename -->
+             <figcaption class="image-caption">Environment Map: field.exr (Tonemapped JPG for display)</figcaption>
+         </figure>
+     </div>
+
+    <p>Environment lighting and the importance sampling implementation are explained below.</p>
+    <p>
+       Environment lighting uses a high dynamic range (HDR) image, often in an equirectangular (latitude-longitude) projection like the one shown, to represent incident radiance $L_i(\mathbf{p}, \omega_i)$ arriving from all directions in the far-field environment. It simulates realistic illumination from sources like the sky, sun, or distant surroundings without modeling them geometrically. When evaluating the rendering equation's reflection integral at a surface point $\mathbf{p}$:
+       $$L_o(\mathbf{p}, \omega_o) = \int_{H^2} f_r(\mathbf{p}, \omega_i, \omega_o) L_i(\mathbf{p}, \omega_i) (\mathbf{n} \cdot \omega_i) d\omega_i$$
+       If a sampled ray direction $\omega_i$ does not hit any scene geometry, its contribution $L_i(\mathbf{p}, \omega_i)$ is determined by looking up the corresponding value in the HDR environment map. The `EnvironmentLight::sample_dir(const Ray& r)` function implements this lookup, converting the ray direction `r.d` into texture coordinates $(\theta, \phi) \rightarrow (x, y)$ and performing bilinear interpolation (`bilerp`) on the HDR map data. This provides complex, realistic illumination from the environment without needing to model individual distant light sources.
+    </p>
+    <br>
+    <p>The *probability_debug.png* file generated by the `save_probability_debug()` method is shown below, along with an explanation of the visualization.</p>
+    <!-- Image container for probability_debug.png -->
+     <div class="image-container">
+         <figure>
+             <img src="images/part3/probability_debug.png" alt="Environment Map Sampling Probability Distribution Visualization" style="max-width: 600px;" class="lightbox-trigger"/>
+             <figcaption class="image-caption">Visualization of CDFs for Env Map Importance Sampling</figcaption>
+         </figure>
+     </div>
+    <p>
+       This image visualizes the data structures used for importance sampling the environment map, generated by `EnvironmentLight::init()` and saved by `save_probability_debug()`. It does not directly show the final PDF $p(\omega_i)$, but rather the precomputed marginal and conditional CDFs used to generate samples according to that PDF.
+       <ul>
+           <li><b>Red Channel:</b> Represents the marginal cumulative distribution function (CDF) for the vertical (theta) direction, $F(j) = P(Y \le j)$. It increases from bottom (0) to top (1).</li>
+           <li><b>Green Channel:</b> Represents the conditional cumulative distribution function (CDF) for the horizontal (phi) direction given a row $j$, $F(i|j) = P(X \le i | Y = j)$. It increases from left (0) to right (1) within each row.</li>
+       </ul>
+       These CDFs are constructed based on the probability mass of each pixel, which is proportional to its luminance weighted by $\sin\theta$: $p(i, j) \propto E[i, j] \sin(\theta_j)$, where $\theta_j = \pi (j + 0.5) / H$. The sampling process (`EnvironmentLight::sample_L`) uses inversion sampling on these CDFs with two uniform random numbers $(u, v)$ to select a pixel $(x, y)$ and thus a direction $\omega_i$. The resulting sampling PDF in terms of solid angle is:
+       $$ p(\omega_i) = p(\theta, \phi) = \frac{p(x, y) \cdot (W \cdot H)}{2 \pi^2 \sin\theta} $$
+       where $p(x,y)$ is the normalized probability mass of the pixel $(x,y)$ stored in `pdf_envmap`. Brighter areas in the original HDR map lead to higher probability mass $p(x,y)$ and thus higher values in the CDFs (steeper gradients in the debug image), concentrating samples towards brighter regions of the environment map.
+    </p>
+     <div class="analysis">
+        <strong>Implementation Goal:</strong> To create and visualize the internal data structures (marginal and conditional CDFs) derived from a non-uniform PDF $p(\omega_i)$ based on environment map luminance for importance sampling.<br/>
+        <strong>Expected Result:</strong> The debug image should show vertically increasing red intensity (marginal CDF) and horizontally increasing green intensity within each row (conditional CDF). The rate of increase (gradient) should be higher in rows/columns corresponding to brighter areas of the original environment map.<br/>
+        <strong>Observed Result:</strong> The `probability_debug.png` displays the expected structure: red increases vertically, green increases horizontally per row. The gradients appear non-uniform, suggesting the CDFs correctly reflect the luminance distribution of the source HDR map (e.g., the bright sky area likely corresponds to steeper gradients).<br/>
+        <strong>Potential Errors Check:</strong> Uniform gradients (linear increase) would indicate an error in calculating $p(i,j)$ (e.g., missing $\sin\theta$ or luminance weighting). Non-monotonic increases would indicate errors in the CDF summation process within `EnvironmentLight::init()`. The visualization suggests correct CDF generation.
+    </div>
+    <br>
+    <p>Using `bunny_unlit.dae` and the chosen environment light, two images were rendered: one using uniform hemisphere sampling for the environment light, and one using importance sampling. Settings were 64 samples per pixel, 4 samples per light, and max_ray_depth=5.</p>
+    <!-- Swiper container for Part 3 bunny_unlit -->
+    <div class="swiper-container part3-bunny-unlit-swiper">
+        <div class="swiper-wrapper">
+             <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part3/bunny_unlit_uniform_s64_l4.png" alt="Unlit Bunny - Uniform Env Sampling" class="lightbox-trigger"/> <figcaption class="image-caption">Uniform Env Sampling ($p(\omega_i) = 1/4\pi$, 4spp, 64spl)</figcaption> </figure> <figure> <img src="images/part3/bunny_unlit_uniform_s64_l4_rate.png" alt="Unlit Bunny Uniform Rate" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric (Uniform)</figcaption> </figure> </div> </div>
+            <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part3/bunny_unlit_importance_s64_l4.png" alt="Unlit Bunny - Importance Env Sampling" class="lightbox-trigger"/> <figcaption class="image-caption">Importance Env Sampling ($p(\omega_i) \propto L_i \sin\theta$, 4spp, 64spl)</figcaption> </figure> <figure> <img src="images/part3/bunny_unlit_importance_s64_l4_rate.png" alt="Unlit Bunny Importance Rate" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric (Importance)</figcaption> </figure> </div> </div>
+         </div>
+        <!-- Add Navigation -->
+        <div class="swiper-button-next part3-bunny-unlit-swiper-next"></div>
+        <div class="swiper-button-prev part3-bunny-unlit-swiper-prev"></div>
+        <!-- Add Pagination -->
+        <div class="swiper-pagination part3-bunny-unlit-swiper-pagination"></div>
+    </div>
+    <p>
+        This comparison shows the variance reduction achieved by using the implemented importance sampling strategy (`EnvironmentLight::sample_L`) versus uniform spherical sampling when estimating direct illumination from the environment map. The Monte Carlo estimator for direct environment light is:
+        $$\langle L_{direct} \rangle = \frac{1}{N_{spl}} \sum_{k=1}^{N_{spl}} \frac{f_r(\omega_i^{(k)}, \omega_o) L_{env}(\omega_i^{(k)}) (\mathbf{n} \cdot \omega_i^{(k)})}{p_{env}(\omega_i^{(k)})}$$
+        where $N_{spl}$ is the number of samples per light (`spl`), $L_{env}$ is the radiance from the environment map sample, and $p_{env}$ is the PDF used for sampling the environment light direction $\omega_i^{(k)}$.
+        <ul>
+            <li><b>Uniform Sampling:</b> Uses $p_{env}(\omega_i) = 1/(4\pi)$. Samples are spread evenly across all directions. If the environment map has localized bright areas (like the sun/sky), many samples will land in dark regions, contributing little to the sum but potentially increasing variance if $L_{env}/p_{env}$ becomes large for bright samples.</li>
+            <li><b>Importance Sampling:</b> Uses the PDF derived in `init()`: $p_{env}(\omega_i) \propto L_{env}(\omega_i) \sin\theta$. This *should* concentrate samples in directions $\omega_i$ where the incident radiance $L_{env}(\omega_i)$ is high. The estimator weights $\frac{f_r L_{env} \cos\theta_i}{p_{env}(\omega_i)}$ *should* become more uniform, significantly reducing variance and producing a cleaner image for the same number of samples per light (spl).</li>
+        </ul>
+        <!-- Updated observation -->
+        However, the importance sampled image looks visually very similar to the uniform one, showing minimal noise reduction. This is unexpected and points towards a potential implementation issue where the importance sampling is not effectively reducing variance as anticipated.
+    </p>
+     <div class="analysis">
+        <strong>Implementation Goal:</strong> To apply the constructed environment map importance sampling PDF $p(\omega_i)$ via `EnvironmentLight::sample_L` and compare its variance reduction against uniform sampling when estimating direct illumination.<br/>
+        <strong>Expected Result:</strong> The importance-sampled image should have significantly less noise compared to the uniformly sampled image for the same sample count, especially in areas illuminated by bright parts of the environment map.<br/>
+        <!-- Updated observation -->
+        <strong>Observed Result:</strong> The visual comparison shows minimal difference; `bunny_unlit_importance_s64_l4.png` appears nearly identical in noise level to `bunny_unlit_uniform_s64_l4.png`, contrary to expectations.<br/>
+        <!-- Updated error check -->
+        <strong>Potential Errors Check:</strong> The lack of significant variance reduction strongly suggests potential errors in the importance sampling implementation. This could be in the sampling routine (`EnvironmentLight::sample_L` not correctly using the CDFs), the PDF calculation (`sample_L` returning an incorrect `pdf` value, perhaps reverting to uniform?), or how the samples are weighted in the estimator (`estimate_direct_lighting_importance`). While the CDF debug image appears plausible, the end result indicates the sampling might not be behaving as intended.
+    </div>
+    <br>
+    <p>Using `bunny_microfacet_cu_unlit.dae` and the chosen environment light, two images comparing uniform and importance sampling for the environment light were rendered. Settings were 64 samples per pixel, 4 samples per light, and max_ray_depth=5.</p>
+    <div class="swiper-container part3-bunny-microfacet-swiper">
+        <div class="swiper-wrapper">
+             <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part3/bunny_microfacet_cu_unlit_uniform_s64_l4.png" alt="Microfacet Bunny - Uniform Env Sampling" class="lightbox-trigger"/> <figcaption class="image-caption">Uniform Env Sampling ($p(\omega_i) = 1/4\pi$, 4spp, 64spl)</figcaption> </figure> <figure> <img src="images/part3/bunny_microfacet_cu_unlit_uniform_s64_l4_rate.png" alt="Microfacet Bunny Uniform Rate" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric (Uniform)</figcaption> </figure> </div> </div>
+            <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part3/bunny_microfacet_cu_unlit_importance_s64_l4.png" alt="Microfacet Bunny - Importance Env Sampling" class="lightbox-trigger"/> <figcaption class="image-caption">Importance Env Sampling ($p(\omega_i) \propto L_i \sin\theta$, 4spp, 64spl)</figcaption> </figure> <figure> <img src="images/part3/bunny_microfacet_cu_unlit_importance_s64_l4_rate.png" alt="Microfacet Bunny Importance Rate" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric (Importance)</figcaption> </figure> </div> </div>
+         </div>
+        <!-- Add Navigation -->
+        <div class="swiper-button-next part3-bunny-microfacet-swiper-next"></div>
+        <div class="swiper-button-prev part3-bunny-microfacet-swiper-prev"></div>
+        <!-- Add Pagination -->
+        <div class="swiper-pagination part3-bunny-microfacet-swiper-pagination"></div>
+    </div>
+    <p>
+       Illuminating the reflective microfacet bunny with the environment map. The rendering equation term being estimated is $\int_{H^2} f_r(\omega_i, \omega_o) L_{env}(\omega_i) (\mathbf{n} \cdot \omega_i) d\omega_i$. Here, we are importance sampling the $L_{env}(\omega_i)$ part using the PDF $p_{env}(\omega_i)$.
+        <ul>
+            <li><b>Uniform Sampling:</b> High noise results from inefficiently sampling the environment map $L_{env}$ (many samples hit dark areas).</li>
+            <li><b>Importance Sampling:</b> Sampling $L_{env}$ more effectively using the luminance-based PDF $p_{env}(\omega_i) \propto L_{env} \sin\theta$ *should* yield a much lower-variance estimate of the incident light term, significantly improving the overall estimate of the integral and resulting in a much cleaner image.</li>
+        </ul>
+        <!-- Updated observation -->
+        As with the diffuse bunny, the importance sampling version shows little to no improvement over the uniform sampling version, further suggesting the importance sampling implementation is not functioning correctly.
+    </p>
+     <div class="analysis">
+        <strong>Implementation Goal:</strong> To show the benefit of environment map importance sampling (`EnvironmentLight::sample_L`) when rendering reflective materials illuminated solely by the map.<br/>
+        <strong>Expected Result:</strong> Importance sampling the environment map should still yield a lower-noise result compared to uniform sampling, as accurately estimating $L_i$ from the environment benefits the overall reflection calculation.<br/>
+        <!-- Updated observation -->
+        <strong>Observed Result:</strong> The comparison again shows minimal difference in noise levels between the importance-sampled image `bunny_microfacet_cu_unlit_importance_s64_l4.png` and the uniform one `bunny_microfacet_cu_unlit_uniform_s64_l4.png`.<br/>
+        <!-- Updated error check -->
+        <strong>Potential Errors Check:</strong> The consistent failure to reduce noise across different materials reinforces the likelihood of an implementation issue in `EnvironmentLight::sample_L` (sampling or PDF calculation) or its use within `estimate_direct_lighting_importance`. The expected variance reduction is not being achieved.
+    </div>
+    <br>
+
+
+    <h3 align="middle">Part 4. Depth of Field</h3>
+    <p>The difference between a pinhole camera model and a thin-lens camera model, and the implementation of the thin-lens model, are explained below.</p>
+    <p>
+       The <b>pinhole camera model</b> assumes light passes through an infinitesimally small aperture. This results in a geometrically perfect projection where every point in the scene maps to a single point on the image plane, leading to an infinite depth of field (everything is in focus). The ray generation (`Camera::generate_ray`) simply traces a line from the pinhole origin (camera `pos`) through the calculated point on the sensor plane one unit away.
+
+       The implemented <b>thin-lens model</b> (`Camera::generate_ray_for_thin_lens`) simulates a lens with a finite aperture radius (`lensRadius`) and a specific focal length, determined implicitly by the `focalDistance` parameter. Light rays from a single scene point now pass through different points on the lens before converging. The thin lens equation relates object distance $d_o$, image distance $d_i$, and focal length $f$:
+       $$ \frac{1}{f} = \frac{1}{d_o} + \frac{1}{d_i} $$
+       In the implementation (`camera_lens.cpp`), we effectively fix the image distance $d_i$ (sensor plane position relative to lens) and the object distance for perfect focus $d_o = \text{focalDistance}$. Rays are generated by:
+       1. Calculating the direction of a pinhole ray towards the sensor sample $(x, y)$.
+       2. Finding the intersection point $p_{Focus}$ of this pinhole ray with the focal plane located at distance $d_o = \text{focalDistance}$ from the lens origin.
+       3. Sampling a point $p_{Lens}$ uniformly on the lens disk (radius `lensRadius`) centered at the camera origin.
+       4. Tracing the final ray from the world-space position corresponding to $p_{Lens}$ in the direction of the world-space position corresponding to $p_{Focus}$.
+       Only objects exactly on the focal plane (at distance $d_o$) will have their rays converge perfectly on the sensor plane (at distance $d_i$). Objects at other distances $d_o'$ form a blurred "circle of confusion" on the sensor because rays passing through different parts of the lens ($p_{Lens}$) do not converge at the same sensor point after refraction. This effect creates depth of field, where only a certain range of distances appears sharp.
+    </p>
+    <br>
+    <p>A "focus stack" is shown by rendering at least five images of `CBdragon.dae` with the camera positioned slightly differently, varying the `focalDistance` parameter but keeping `lensRadius` constant. Use 128 samples per pixel, 1 sample per light, and max_ray_depth=5.</p>
+    <!-- Swiper container for Part 4 focus stack -->
+    <div class="swiper-container part4-focus-stack-swiper">
+        <div class="swiper-wrapper">
+              <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part4/test/focus_stack_d3.0_b0.1.png" alt="Focus Stack: Focal Depth = 3.0" class="lightbox-trigger"/> <figcaption class="image-caption">Focus Stack: $d_f = 3.0$ ($R \propto 0.1$)</figcaption> </figure> <figure> <img src="images/part4/test/focus_stack_d3.0_b0.1_rate.png" alt="Focus Stack Depth 3.0 Rate" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric ($d_f = 3.0$)</figcaption> </figure> </div> </div>
+             <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part4/test/focus_stack_d4.0_b0.1.png" alt="Focus Stack: Focal Depth = 4.0" class="lightbox-trigger"/> <figcaption class="image-caption">Focus Stack: $d_f = 4.0$ ($R \propto 0.1$)</figcaption> </figure> <figure> <img src="images/part4/test/focus_stack_d4.0_b0.1_rate.png" alt="Focus Stack Depth 4.0 Rate" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric ($d_f = 4.0$)</figcaption> </figure> </div> </div>
+             <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part4/test/focus_stack_d5.0_b0.1.png" alt="Focus Stack: Focal Depth = 5.0" class="lightbox-trigger"/> <figcaption class="image-caption">Focus Stack: $d_f = 5.0$ ($R \propto 0.1$)</figcaption> </figure> <figure> <img src="images/part4/test/focus_stack_d5.0_b0.1_rate.png" alt="Focus Stack Depth 5.0 Rate" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric ($d_f = 5.0$)</figcaption> </figure> </div> </div>
+             <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part4/test/focus_stack_d6.0_b0.1.png" alt="Focus Stack: Focal Depth = 6.0" class="lightbox-trigger"/> <figcaption class="image-caption">Focus Stack: $d_f = 6.0$ ($R \propto 0.1$)</figcaption> </figure> <figure> <img src="images/part4/test/focus_stack_d6.0_b0.1_rate.png" alt="Focus Stack Depth 6.0 Rate" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric ($d_f = 6.0$)</figcaption> </figure> </div> </div>
+        </div>
+        <!-- Add Navigation -->
+        <div class="swiper-button-next part4-focus-stack-swiper-next"></div>
+        <div class="swiper-button-prev part4-focus-stack-swiper-prev"></div>
+        <!-- Add Pagination -->
+        <div class="swiper-pagination part4-focus-stack-swiper-pagination"></div>
+    </div>
+    <p>
+       This sequence demonstrates the effect of varying the focal distance (`camera->focalDistance`, denoted $d_f$) in the thin-lens implementation (`Camera::generate_ray_for_thin_lens`), while keeping the aperture radius (`camera->lensRadius`, denoted $R$) constant (here, $R$ corresponds to $b=0.1$). As $d_f$ increases from 3.0 to 6.0, the plane of sharp focus moves progressively farther away from the camera, deeper into the scene. Objects near the specified $d_f$ appear sharp, while objects significantly closer or farther than $d_f$ are blurred due to the circle of confusion effect. The implementation correctly simulates shifting the focus plane.
+    </p>
+     <div class="analysis">
+        <strong>Implementation Goal:</strong> To implement a thin-lens camera model (`Camera::generate_ray_for_thin_lens`) capable of adjusting the focal plane distance $d_f$ (`camera->focalDistance`).<br/>
+        <strong>Expected Result:</strong> Varying $d_f$ should change which part of the scene appears sharpest, with blur increasing for objects farther from this plane, consistent with the thin lens equation.<br/>
+        <strong>Observed Result:</strong> The images demonstrate the intended effect. The sharp region clearly moves from the front part of the dragon ($d_f=3.0$) towards the back ($d_f=6.0$).<br/>
+        <strong>Potential Errors Check:</strong> If focus did not shift, or shifted incorrectly (e.g., moving closer when $d_f$ increased), it would indicate errors in the calculation of $p_{Focus}$ or the final ray direction in `generate_ray_for_thin_lens`. Results suggest correct implementation.
+    </div>
+    <br>
+    <p>A sequence of 4 pictures with visibly different aperture sizes was rendered using `CBdragon.dae` with the camera positioned slightly differently, varying the `lensRadius` parameter but keeping `focalDistance` constant. Settings were 128 samples per pixel, 1 sample per light, and max_ray_depth=5.</p>
+    <!-- Swiper container for Part 4 aperture -->
+    <div class="swiper-container part4-aperture-swiper">
+        <div class="swiper-wrapper">
+             <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part4/test/lens_stack_b0.01_d4.5.png" alt="Aperture Sequence: Radius ~ 0.01" class="lightbox-trigger"/> <figcaption class="image-caption">Aperture: $R \propto 0.01$ ($d_f = 4.5$)</figcaption> </figure> <figure> <img src="images/part4/test/lens_stack_b0.01_d4.5_rate.png" alt="Aperture 0.01 Rate" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric ($R \propto 0.01$)</figcaption> </figure> </div> </div>
+             <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part4/test/lens_stack_b0.05_d4.5.png" alt="Aperture Sequence: Radius ~ 0.05" class="lightbox-trigger"/> <figcaption class="image-caption">Aperture: $R \propto 0.05$ ($d_f = 4.5$)</figcaption> </figure> <figure> <img src="images/part4/test/lens_stack_b0.05_d4.5_rate.png" alt="Aperture 0.05 Rate" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric ($R \propto 0.05$)</figcaption> </figure> </div> </div>
+             <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part4/test/lens_stack_b0.1_d4.5.png" alt="Aperture Sequence: Radius ~ 0.1" class="lightbox-trigger"/> <figcaption class="image-caption">Aperture: $R \propto 0.1$ ($d_f = 4.5$)</figcaption> </figure> <figure> <img src="images/part4/test/lens_stack_b0.1_d4.5_rate.png" alt="Aperture 0.1 Rate" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric ($R \propto 0.1$)</figcaption> </figure> </div> </div>
+             <div class="swiper-slide"> <div class="image-container"> <figure> <img src="images/part4/test/lens_stack_b0.2_d4.5.png" alt="Aperture Sequence: Radius ~ 0.2" class="lightbox-trigger"/> <figcaption class="image-caption">Aperture: $R \propto 0.2$ ($d_f = 4.5$)</figcaption> </figure> <figure> <img src="images/part4/test/lens_stack_b0.2_d4.5_rate.png" alt="Aperture 0.2 Rate" class="lightbox-trigger"/> <figcaption class="image-caption">Rate/Metric ($R \propto 0.2$)</figcaption> </figure> </div> </div>
+        </div>
+        <!-- Add Navigation -->
+        <div class="swiper-button-next part4-aperture-swiper-next"></div>
+        <div class="swiper-button-prev part4-aperture-swiper-prev"></div>
+        <!-- Add Pagination -->
+        <div class="swiper-pagination part4-aperture-swiper-pagination"></div>
+    </div>
+    <p>
+       This sequence varies the lens aperture radius (`camera->lensRadius`, denoted $R$, related to parameter $b$) in the thin-lens implementation (`Camera::generate_ray_for_thin_lens`), while keeping the focal distance constant ($d_f = 4.5$). The aperture size directly controls the depth of field (DOF) – the range of distances that appear acceptably sharp.
+        <ul>
+            <li><b>Radius $\propto$ 0.01 (Small Aperture):</b> A small $R$ approximates a pinhole camera. Rays passing through the lens are very close together, resulting in a small circle of confusion even for out-of-focus objects. The implementation yields a large DOF, with most of the scene appearing sharp.</li>
+            <li><b>Radius $\propto$ 0.05 (Moderate Aperture):</b> Increasing $R$ allows rays to pass through more separated points on the lens. The circle of confusion for out-of-focus objects becomes larger. The DOF is reduced, and blur becomes apparent in the foreground and background.</li>
+            <li><b>Radius $\propto$ 0.1 (Large Aperture):</b> A larger $R$ further increases the size of the circle of confusion. The implementation produces a shallower DOF, with stronger background/foreground blur.</li>
+            <li><b>Radius $\propto$ 0.2 (Very Large Aperture):</b> A very large $R$ maximizes the circle of confusion effect. The implementation results in a very shallow DOF, strongly blurring everything outside the narrow focal plane and isolating the subject.</li>
+        </ul>
+        The implementation correctly shows the inverse relationship between aperture radius $R$ and the extent of the depth of field.
+    </p>
+    <div class="analysis">
+        <strong>Implementation Goal:</strong> To control depth of field (DOF) by varying the aperture radius $R$ (`camera->lensRadius`) in the thin-lens model (`Camera::generate_ray_for_thin_lens`).<br/>
+        <strong>Expected Result:</strong> Increasing aperture radius $R$ should decrease the DOF, increasing the blurriness of out-of-focus regions, while keeping the focal plane ($d_f=4.5$) sharp. The amount of blur should be proportional to the aperture radius and the distance from the focal plane.<br/>
+        <strong>Observed Result:</strong> The images confirm this relationship. The $R \propto 0.01$ image shows minimal blur (large DOF), while the $R \propto 0.2$ image shows significant blur in the foreground and background (shallow DOF), with the middle section remaining sharp.<br/>
+        <strong>Potential Errors Check:</strong> If DOF did not change with aperture size, or changed inversely, it would indicate errors in the lens point sampling ($p_{Lens}$) or the final ray direction calculation in `generate_ray_for_thin_lens`. The results suggest correct implementation.
+    </div>
+    <br>
+
+    <div class="appendix-section">
+        <h3 align="middle">Appendix: Additional Rendered Images</h3>
+        <p>This carousel contains additional images generated during testing and exploration.</p>
+        <div class="swiper-container appendix-swiper">
+            <div class="swiper-wrapper">
+                 <!-- Part 1 Images -->
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part1/CBspheres_depth_0.png" alt="Appendix: CBspheres_depth_0.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 1: CBspheres_depth_0.png</figcaption></figure> <figure><img src="images/part1/CBspheres_depth_0_rate.png" alt="Appendix: CBspheres_depth_0_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 1: CBspheres_depth_0_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part1/CBspheres_depth_1.png" alt="Appendix: CBspheres_depth_1.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 1: CBspheres_depth_1.png</figcaption></figure> <figure><img src="images/part1/CBspheres_depth_1_rate.png" alt="Appendix: CBspheres_depth_1_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 1: CBspheres_depth_1_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part1/CBspheres_depth_2.png" alt="Appendix: CBspheres_depth_2.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 1: CBspheres_depth_2.png</figcaption></figure> <figure><img src="images/part1/CBspheres_depth_2_rate.png" alt="Appendix: CBspheres_depth_2_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 1: CBspheres_depth_2_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part1/CBspheres_depth_3.png" alt="Appendix: CBspheres_depth_3.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 1: CBspheres_depth_3.png</figcaption></figure> <figure><img src="images/part1/CBspheres_depth_3_rate.png" alt="Appendix: CBspheres_depth_3_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 1: CBspheres_depth_3_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part1/CBspheres_depth_4.png" alt="Appendix: CBspheres_depth_4.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 1: CBspheres_depth_4.png</figcaption></figure> <figure><img src="images/part1/CBspheres_depth_4_rate.png" alt="Appendix: CBspheres_depth_4_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 1: CBspheres_depth_4_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part1/CBspheres_depth_5.png" alt="Appendix: CBspheres_depth_5.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 1: CBspheres_depth_5.png</figcaption></figure> <figure><img src="images/part1/CBspheres_depth_5_rate.png" alt="Appendix: CBspheres_depth_5_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 1: CBspheres_depth_5_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part1/CBspheres_depth_100.png" alt="Appendix: CBspheres_depth_100.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 1: CBspheres_depth_100.png</figcaption></figure> <figure><img src="images/part1/CBspheres_depth_100_rate.png" alt="Appendix: CBspheres_depth_100_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 1: CBspheres_depth_100_rate.png</figcaption></figure> </div> </div>
+                 <!-- Part 2 Images -->
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part2/bunny_cu_hemisphere_s64.png" alt="Appendix: bunny_cu_hemisphere_s64.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: bunny_cu_hemisphere_s64.png</figcaption></figure> <figure><img src="images/part2/bunny_cu_hemisphere_s64_rate.png" alt="Appendix: bunny_cu_hemisphere_s64_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: bunny_cu_hemisphere_s64_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part2/bunny_cu_hemisphere_s64_importance.png" alt="Appendix: bunny_cu_hemisphere_s64_importance.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: bunny_cu_hemisphere_s64_importance.png</figcaption></figure> <figure><img src="images/part2/bunny_cu_hemisphere_s64_importance_rate.png" alt="Appendix: bunny_cu_hemisphere_s64_importance_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: bunny_cu_hemisphere_s64_importance_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part2/bunny_cu_importance_s64.png" alt="Appendix: bunny_cu_importance_s64.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: bunny_cu_importance_s64.png</figcaption></figure> <figure><img src="images/part2/bunny_cu_importance_s64_rate.png" alt="Appendix: bunny_cu_importance_s64_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: bunny_cu_importance_s64_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part2/bunny_cu_importance_s64_importance.png" alt="Appendix: bunny_cu_importance_s64_importance.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: bunny_cu_importance_s64_importance.png</figcaption></figure> <figure><img src="images/part2/bunny_cu_importance_s64_importance_rate.png" alt="Appendix: bunny_cu_importance_s64_importance_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: bunny_cu_importance_s64_importance_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part2/bunny_microfacet_importance_64spp_1spl_importance.png" alt="Appendix: bunny_microfacet_importance_64spp_1spl_importance.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: bunny_microfacet_importance_64spp_1spl_importance.png</figcaption></figure> <figure><img src="images/part2/bunny_microfacet_importance_64spp_1spl_importance_rate.png" alt="Appendix: bunny_microfacet_importance_64spp_1spl_importance_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: bunny_microfacet_importance_64spp_1spl_importance_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part2/part2_bunny_cosine.png" alt="Appendix: part2_bunny_cosine.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: part2_bunny_cosine.png</figcaption></figure> <figure><img src="images/part2/part2_bunny_cosine_rate.png" alt="Appendix: part2_bunny_cosine_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: part2_bunny_cosine_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part2/part2_dragon_alpha_0.005.png" alt="Appendix: part2_dragon_alpha_0.005.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: part2_dragon_alpha_0.005.png</figcaption></figure> <figure><img src="images/part2/part2_dragon_alpha_0.005_rate.png" alt="Appendix: part2_dragon_alpha_0.005_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: part2_dragon_alpha_0.005_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part2/part2_dragon_alpha_0.05.png" alt="Appendix: part2_dragon_alpha_0.05.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: part2_dragon_alpha_0.05.png</figcaption></figure> <figure><img src="images/part2/part2_dragon_alpha_0.05_rate.png" alt="Appendix: part2_dragon_alpha_0.05_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: part2_dragon_alpha_0.05_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part2/part2_dragon_alpha_0.25.png" alt="Appendix: part2_dragon_alpha_0.25.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: part2_dragon_alpha_0.25.png</figcaption></figure> <figure><img src="images/part2/part2_dragon_alpha_0.25_rate.png" alt="Appendix: part2_dragon_alpha_0.25_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: part2_dragon_alpha_0.25_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part2/part2_dragon_alpha_0.5.png" alt="Appendix: part2_dragon_alpha_0.5.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: part2_dragon_alpha_0.5.png</figcaption></figure> <figure><img src="images/part2/part2_dragon_alpha_0.5_rate.png" alt="Appendix: part2_dragon_alpha_0.5_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 2: part2_dragon_alpha_0.5_rate.png</figcaption></figure> </div> </div>
+                 <!-- Part 3 Images -->
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part3/bunny_microfacet_cu_unlit_importance_s64_l4.png" alt="Appendix: bunny_microfacet_cu_unlit_importance_s64_l4.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 3: bunny_microfacet_cu_unlit_importance_s64_l4.png</figcaption></figure> <figure><img src="images/part3/bunny_microfacet_cu_unlit_importance_s64_l4_rate.png" alt="Appendix: bunny_microfacet_cu_unlit_importance_s64_l4_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 3: bunny_microfacet_cu_unlit_importance_s64_l4_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part3/bunny_microfacet_cu_unlit_uniform_s64_l4.png" alt="Appendix: bunny_microfacet_cu_unlit_uniform_s64_l4.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 3: bunny_microfacet_cu_unlit_uniform_s64_l4.png</figcaption></figure> <figure><img src="images/part3/bunny_microfacet_cu_unlit_uniform_s64_l4_rate.png" alt="Appendix: bunny_microfacet_cu_unlit_uniform_s64_l4_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 3: bunny_microfacet_cu_unlit_uniform_s64_l4_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part3/bunny_unlit_importance_s64_l4.png" alt="Appendix: bunny_unlit_importance_s64_l4.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 3: bunny_unlit_importance_s64_l4.png</figcaption></figure> <figure><img src="images/part3/bunny_unlit_importance_s64_l4_rate.png" alt="Appendix: bunny_unlit_importance_s64_l4_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 3: bunny_unlit_importance_s64_l4_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part3/bunny_unlit_uniform_s64_l4.png" alt="Appendix: bunny_unlit_uniform_s64_l4.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 3: bunny_unlit_uniform_s64_l4.png</figcaption></figure> <figure><img src="images/part3/bunny_unlit_uniform_s64_l4_rate.png" alt="Appendix: bunny_unlit_uniform_s64_l4_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 3: bunny_unlit_uniform_s64_l4_rate.png</figcaption></figure> </div> </div>
+                 <!-- Part 4 Images -->
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/dragon_default_blur_focusFar.png" alt="Appendix: dragon_default_blur_focusFar.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_default_blur_focusFar.png</figcaption></figure> <figure><img src="images/part4/dragon_default_blur_focusFar_rate.png" alt="Appendix: dragon_default_blur_focusFar_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_default_blur_focusFar_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/dragon_default_blur_focusNear.png" alt="Appendix: dragon_default_blur_focusNear.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_default_blur_focusNear.png</figcaption></figure> <figure><img src="images/part4/dragon_default_blur_focusNear_rate.png" alt="Appendix: dragon_default_blur_focusNear_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_default_blur_focusNear_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/dragon_default_pinhole.png" alt="Appendix: dragon_default_pinhole.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_default_pinhole.png</figcaption></figure> <figure><img src="images/part4/dragon_default_pinhole_rate.png" alt="Appendix: dragon_default_pinhole_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_default_pinhole_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/dragon_left_blur_focusFar.png" alt="Appendix: dragon_left_blur_focusFar.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_left_blur_focusFar.png</figcaption></figure> <figure><img src="images/part4/dragon_left_blur_focusFar_rate.png" alt="Appendix: dragon_left_blur_focusFar_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_left_blur_focusFar_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/dragon_left_blur_focusNear.png" alt="Appendix: dragon_left_blur_focusNear.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_left_blur_focusNear.png</figcaption></figure> <figure><img src="images/part4/dragon_left_blur_focusNear_rate.png" alt="Appendix: dragon_left_blur_focusNear_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_left_blur_focusNear_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/dragon_left_pinhole.png" alt="Appendix: dragon_left_pinhole.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_left_pinhole.png</figcaption></figure> <figure><img src="images/part4/dragon_left_pinhole_rate.png" alt="Appendix: dragon_left_pinhole_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_left_pinhole_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/dragon_right_blur_focusFar.png" alt="Appendix: dragon_right_blur_focusFar.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_right_blur_focusFar.png</figcaption></figure> <figure><img src="images/part4/dragon_right_blur_focusFar_rate.png" alt="Appendix: dragon_right_blur_focusFar_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_right_blur_focusFar_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/dragon_right_blur_focusNear.png" alt="Appendix: dragon_right_blur_focusNear.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_right_blur_focusNear.png</figcaption></figure> <figure><img src="images/part4/dragon_right_blur_focusNear_rate.png" alt="Appendix: dragon_right_blur_focusNear_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_right_blur_focusNear_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/dragon_right_pinhole.png" alt="Appendix: dragon_right_pinhole.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_right_pinhole.png</figcaption></figure> <figure><img src="images/part4/dragon_right_pinhole_rate.png" alt="Appendix: dragon_right_pinhole_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4: dragon_right_pinhole_rate.png</figcaption></figure> </div> </div>
+                 <!-- Part 4 Test Images -->
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/test/dragon_default_blur_focusFar.png" alt="Appendix Test: dragon_default_blur_focusFar.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: dragon_default_blur_focusFar.png</figcaption></figure> <figure><img src="images/part4/test/dragon_default_blur_focusFar_rate.png" alt="Appendix Test: dragon_default_blur_focusFar_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: dragon_default_blur_focusFar_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/test/dragon_default_blur_focusNear.png" alt="Appendix Test: dragon_default_blur_focusNear.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: dragon_default_blur_focusNear.png</figcaption></figure> <figure><img src="images/part4/test/dragon_default_blur_focusNear_rate.png" alt="Appendix Test: dragon_default_blur_focusNear_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: dragon_default_blur_focusNear_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/test/focus_stack_d3.0_b0.1.png" alt="Appendix Test: focus_stack_d3.0_b0.1.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: focus_stack_d3.0_b0.1.png</figcaption></figure> <figure><img src="images/part4/test/focus_stack_d3.0_b0.1_rate.png" alt="Appendix Test: focus_stack_d3.0_b0.1_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: focus_stack_d3.0_b0.1_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/test/focus_stack_d4.0_b0.1.png" alt="Appendix Test: focus_stack_d4.0_b0.1.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: focus_stack_d4.0_b0.1.png</figcaption></figure> <figure><img src="images/part4/test/focus_stack_d4.0_b0.1_rate.png" alt="Appendix Test: focus_stack_d4.0_b0.1_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: focus_stack_d4.0_b0.1_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/test/focus_stack_d5.0_b0.1.png" alt="Appendix Test: focus_stack_d5.0_b0.1.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: focus_stack_d5.0_b0.1.png</figcaption></figure> <figure><img src="images/part4/test/focus_stack_d5.0_b0.1_rate.png" alt="Appendix Test: focus_stack_d5.0_b0.1_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: focus_stack_d5.0_b0.1_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/test/focus_stack_d6.0_b0.1.png" alt="Appendix Test: focus_stack_d6.0_b0.1.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: focus_stack_d6.0_b0.1.png</figcaption></figure> <figure><img src="images/part4/test/focus_stack_d6.0_b0.1_rate.png" alt="Appendix Test: focus_stack_d6.0_b0.1_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: focus_stack_d6.0_b0.1_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/test/lens_stack_b0.01_d4.5.png" alt="Appendix Test: lens_stack_b0.01_d4.5.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: lens_stack_b0.01_d4.5.png</figcaption></figure> <figure><img src="images/part4/test/lens_stack_b0.01_d4.5_rate.png" alt="Appendix Test: lens_stack_b0.01_d4.5_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: lens_stack_b0.01_d4.5_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/test/lens_stack_b0.05_d4.5.png" alt="Appendix Test: lens_stack_b0.05_d4.5.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: lens_stack_b0.05_d4.5.png</figcaption></figure> <figure><img src="images/part4/test/lens_stack_b0.05_d4.5_rate.png" alt="Appendix Test: lens_stack_b0.05_d4.5_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: lens_stack_b0.05_d4.5_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/test/lens_stack_b0.1_d4.5.png" alt="Appendix Test: lens_stack_b0.1_d4.5.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: lens_stack_b0.1_d4.5.png</figcaption></figure> <figure><img src="images/part4/test/lens_stack_b0.1_d4.5_rate.png" alt="Appendix Test: lens_stack_b0.1_d4.5_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: lens_stack_b0.1_d4.5_rate.png</figcaption></figure> </div> </div>
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/part4/test/lens_stack_b0.2_d4.5.png" alt="Appendix Test: lens_stack_b0.2_d4.5.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: lens_stack_b0.2_d4.5.png</figcaption></figure> <figure><img src="images/part4/test/lens_stack_b0.2_d4.5_rate.png" alt="Appendix Test: lens_stack_b0.2_d4.5_rate.png" class="lightbox-trigger"/><figcaption class="image-caption">Part 4 Test: lens_stack_b0.2_d4.5_rate.png</figcaption></figure> </div> </div>
+                 <!-- Other Images -->
+                 <div class="swiper-slide"> <div class="image-container"> <figure><img src="images/exr/b.jpg" alt="Appendix Env Map: Example B" class="lightbox-trigger"/><figcaption class="image-caption">Env Map: Example B</figcaption></figure> </div> </div>
+            </div>
+            <!-- Add Navigation -->
+            <div class="swiper-button-next appendix-swiper-next"></div>
+            <div class="swiper-button-prev appendix-swiper-prev"></div>
+            <!-- Add Pagination -->
+            <div class="swiper-pagination appendix-swiper-pagination"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basiclightbox@5.0.4/dist/basicLightbox.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/basiclightbox@5.0.4/dist/basicLightbox.min.js"></script>
+    <script>
+     document.addEventListener('DOMContentLoaded', function () {
+            function initializeSwiperWithLightbox(containerSelector, options = {}) {
+                const uniqueId = containerSelector.substring(1); // Remove leading '.'
+                const swiperContainer = document.querySelector(containerSelector);
+                if (!swiperContainer) { console.error("Swiper container not found:", containerSelector); return; }
+
+                // Use unique class names based on the container selector
+                const paginationClass = `${uniqueId}-pagination`;
+                const prevClass = `${uniqueId}-prev`;
+                const nextClass = `${uniqueId}-next`;
+
+                // Find or create navigation/pagination elements *within* the specific container
+                let paginationEl = swiperContainer.querySelector('.' + paginationClass);
+                if (!paginationEl && options.pagination !== false) {
+                    paginationEl = document.createElement('div');
+                    paginationEl.className = `swiper-pagination ${paginationClass}`; // Add both generic and specific class
+                    swiperContainer.appendChild(paginationEl);
+                }
+                let prevEl = swiperContainer.querySelector('.' + prevClass);
+                 if (!prevEl && options.navigation !== false) {
+                    prevEl = document.createElement('div');
+                    prevEl.className = `swiper-button-prev ${prevClass}`; // Add both generic and specific class
+                    swiperContainer.appendChild(prevEl);
+                }
+                let nextEl = swiperContainer.querySelector('.' + nextClass);
+                 if (!nextEl && options.navigation !== false) {
+                    nextEl = document.createElement('div');
+                    nextEl.className = `swiper-button-next ${nextClass}`; // Add both generic and specific class
+                    swiperContainer.appendChild(nextEl);
+                 }
+
+                // Default options (coverflow for main sections)
+                let defaultOptions = {
+                     effect: 'coverflow', grabCursor: true, centeredSlides: true, slidesPerView: 'auto',
+                     coverflowEffect: { rotate: 30, stretch: 0, depth: 150, modifier: 1, slideShadows: true },
+                     // Use the specific class selectors for this instance
+                     pagination: paginationEl ? { el: `.${paginationClass}`, clickable: true } : false,
+                     navigation: prevEl && nextEl ? { nextEl: `.${nextClass}`, prevEl: `.${prevClass}` } : false,
+                     keyboard: { enabled: true }
+                };
+
+                 // Override defaults for appendix
+                 if (containerSelector === '.appendix-swiper') {
+                    // Use standard slide behavior, show multiple tiles
+                    defaultOptions.effect = 'slide'; // Keep 'slide' effect, but change slidesPerView
+                    defaultOptions.slidesPerView = 'auto'; // Show as many as fit based on CSS width
+                    defaultOptions.spaceBetween = 15; // Adjust space between appendix tiles
+                    defaultOptions.coverflowEffect = undefined;
+                    defaultOptions.centeredSlides = false; // Align tiles to the left
+                    defaultOptions.slideShadows = false;
+                 }
+
+                const swiper = new Swiper(containerSelector, {
+                    ...defaultOptions,
+                    ...options // Apply specific options like initialSlide last
+                });
+
+                // Setup Lightbox for images within this Swiper instance
+                const lightboxImages = swiperContainer.querySelectorAll('.lightbox-trigger');
+                lightboxImages.forEach(img => {
+                    img.style.cursor = 'pointer';
+                    img.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Prevent triggering other clicks if nested
+                        const instance = basicLightbox.create(`<img src="${img.src}" alt="${img.alt}">`);
+                        instance.show();
+                    });
+                });
+                return swiper; // Return the swiper instance if needed elsewhere
+            }
+
+            // Initialize all carousels with unique options/selectors
+            initializeSwiperWithLightbox('.part1-swiper', { initialSlide: 3 });
+            initializeSwiperWithLightbox('.part2-dragon-swiper', { initialSlide: 2 });
+            initializeSwiperWithLightbox('.part2-bunny-swiper', { initialSlide: 0 });
+            initializeSwiperWithLightbox('.part3-bunny-unlit-swiper', { initialSlide: 0 });
+            initializeSwiperWithLightbox('.part3-bunny-microfacet-swiper', { initialSlide: 0 });
+            initializeSwiperWithLightbox('.part4-focus-stack-swiper', { initialSlide: 1 });
+            initializeSwiperWithLightbox('.part4-aperture-swiper', { initialSlide: 1 });
+            // Initialize Appendix carousel with 'slide' effect override
+            initializeSwiperWithLightbox('.appendix-swiper', { initialSlide: 0 });
+
+            // Setup Lightbox for any standalone images (outside carousels)
+            // Select images with .lightbox-trigger that are NOT inside a .swiper-slide
+             const standaloneLightboxImages = document.querySelectorAll('figure > .lightbox-trigger:not(.swiper-slide figure > .lightbox-trigger)');
+             standaloneLightboxImages.forEach(img => {
+                 img.style.cursor = 'pointer';
+                 img.addEventListener('click', (e) => {
+                     const instance = basicLightbox.create(`<img src="${img.src}" alt="${img.alt}">`);
+                     instance.show();
+                 });
+             });
+     });
+    </script>
+
+</body>
+</html>
